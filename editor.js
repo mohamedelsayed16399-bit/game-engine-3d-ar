@@ -464,6 +464,19 @@ function addObject(type, over){
   if(!(over && over.pos) && !DEFAULTS[type].pos){ var t = orbit.target; o.pos = [Math.round(t.x), type === 'plane' ? -0.05 : (type==='coin'?1: 0.5), Math.round(t.z)]; if(type !== 'plane' && type !== 'light' && type !== 'coin') o.pos[1] = o.scale[1]/2; if(type==='light') o.pos[1] = 5; }
   state.objects.push(o); addMesh(o); select(o.id); return o;
 }
+function parseOBJ(txt){
+  var vs = [], tri = [], lines = txt.split('\n'), i, j;
+  for(i = 0; i < lines.length; i++){ var p = lines[i].trim().split(/\s+/);
+    if(p[0] === 'v' && p.length >= 4) vs.push([parseFloat(p[1]), parseFloat(p[2]), parseFloat(p[3])]);
+    else if(p[0] === 'f' && p.length >= 4){ var ix = []; for(j = 1; j < p.length; j++){ var n = parseInt(p[j].split('/')[0], 10); ix.push(n < 0 ? vs.length + n : n - 1); } for(j = 1; j < ix.length - 1; j++) tri.push(ix[0], ix[j], ix[j+1]); } }
+  if(!vs.length || !tri.length) return null;
+  var mn = [1e9,1e9,1e9], mx = [-1e9,-1e9,-1e9]; vs.forEach(function(v){ for(var k = 0; k < 3; k++){ mn[k] = Math.min(mn[k], v[k]); mx[k] = Math.max(mx[k], v[k]); } });
+  var sz = Math.max(mx[0]-mn[0], mx[1]-mn[1], mx[2]-mn[2]) || 1, c = [(mn[0]+mx[0])/2, (mn[1]+mx[1])/2, (mn[2]+mx[2])/2], out = [];
+  tri.forEach(function(t){ var v = vs[t]; if(!v) return; out.push(+((v[0]-c[0])/sz).toFixed(4), +((v[1]-c[1])/sz).toFixed(4), +((v[2]-c[2])/sz).toFixed(4)); });
+  return out.length > 9 && out.length % 9 === 0 ? out : null;
+}
+$('#bObj').onclick = function(){ $('#fObj').click(); };
+$('#fObj').onchange = function(){ var f = this.files[0]; this.value = ''; if(!f) return; var fr = new FileReader(); fr.onload = function(){ var m = parseOBJ(fr.result); if(!m){ toast('ملف OBJ غير صالح'); return; } if(m.length > 450000){ toast('الموديل كبير (أكثر من 50 ألف مثلث). بسّطه أولاً'); return; } pushUndo(); var t = orbit.target, o = newObj('cube', { name: f.name.replace(/\.obj$/i,''), type:'model', pos:[Math.round(t.x), 1.5, Math.round(t.z)], scale:[3,3,3], color:'#c9d6ff' }); o.type = 'model'; o.model = m; o.body = 'static'; state.objects.push(o); addMesh(o); select(o.id); toast('تم استيراد الموديل (' + (m.length/9) + ' مثلث)'); }; fr.readAsText(f); };
 $$('#addGrid button').forEach(function(b){ b.onclick = function(){ addObject(b.dataset.t); }; });
 (function(){ var g = $('#prefabGrid'); Object.keys(PREFABS).forEach(function(k){ var b = document.createElement('button'); b.className = 'btn'; b.textContent = PREFABS[k][0]; b.onclick = function(){ addPrefab(k); }; g.appendChild(b); }); })();
 function customPrefabs(){ try{ return JSON.parse(localStorage.getItem('engine.prefabs') || '{}'); }catch(x){ return {}; } }
