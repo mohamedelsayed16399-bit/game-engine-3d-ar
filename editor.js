@@ -193,6 +193,24 @@ function tmplParkour(){
   o.push(newObj('light',{pos:[0,25,-30],intensity:120}));
   return { settings:{ title:'برج الباركور', skyKind:'sunset', music:true, camDist:10, camHeight:7, cycle:true, grade:'warm', vig:true }, objects:o };
 }
+function tmplGauntlet(){
+  var o = [], i;
+  o.push(newObj('plane',{name:'الأرض',pos:[0,-0.05,-40],scale:[16,1,100],color:'#2b2d42',tex:'grid'}));
+  o.push(newObj('player',{pos:[0,1.2,6]}));
+  [-8,8].forEach(function(x){ o.push(newObj('cube',{name:'جدار',pos:[x,2,-40],scale:[0.6,4,100],color:'#8d99ae',tex:'bricks'})); });
+  o.push(newObj('text',{name:'لافتة',pos:[0,3,2],scale:[6,1.6,1],text:'ممر العقبات: اعبر للنهاية!',color:'#ffe066'}));
+  for(i=0;i<5;i++){
+    var z = -8 - i*14;
+    if(i % 3 === 0){ o.push(newObj('sphere',{name:'بندول',pos:[0,2,z],scale:[1.6,1.6,1.6],color:'#e63946',body:'trigger',emissive:true,script:SCRIPTS.pendulum.replace('len = 4','len = 5').replace('speed = 2','speed = 2.4')})); }
+    else if(i % 3 === 1){ o.push(newObj('cube',{name:'عارضة دوارة',pos:[0,0.7,z],scale:[12,0.6,0.6],color:'#ff9f1c',body:'trigger',emissive:true,script:"function update(dt){ self.rot.y += dt * 1.6; }\nfunction onTouch(o){ if(o.type === 'player') game.respawn(o); }\n"})); }
+    else { o.push(newObj('cylinder',{name:'برج',pos:[6,0.8,z],scale:[1.4,1.6,1.4],color:'#6c757d',body:'static',script:SCRIPTS.turret})); o.push(newObj('cylinder',{name:'برج',pos:[-6,0.8,z-4],scale:[1.4,1.6,1.4],color:'#6c757d',body:'static',script:SCRIPTS.turret})); }
+    o.push(newObj('coin',{name:'نجمة',pos:[(i%2?3:-3),1,z-5]}));
+    if(i === 2) o.push(newObj('checkpoint',{name:'نقطة حفظ',pos:[0,1.2,z-8]}));
+  }
+  o.push(newObj('goal',{pos:[0,1.2,-86]}));
+  o.push(newObj('light',{pos:[0,15,-30],intensity:100}));
+  return { settings:{ title:'ممر العقبات', skyKind:'night', music:true, camDist:10, camHeight:7, grade:'cold', vig:true }, objects:o };
+}
 function tmplEmpty(){ return { settings:{}, objects:[ newObj('plane',{name:'الأرض',pos:[0,-0.05,0],scale:[40,1,40]}), newObj('player',{pos:[0,1.2,0]}) ] }; }
 function tmplPlatformer(){
   var o = [];
@@ -231,7 +249,7 @@ function tmplLabyrinth(){
   o.push(newObj('light',{pos:[0,6,0],intensity:120}));
   return { settings:{ title:'المتاهة', sky:'#14213d', camera:'top', camDist:9, camHeight:6 }, objects:o };
 }
-var TEMPLATES = { parkour:['🧗 برج باركور (منصات متحركة وساقطة)',tmplParkour], puzzle:['🔑 غرفة لغز (مفتاح وباب ومؤقت)',tmplPuzzle], fps:['🎯 منظور أول: إطلاق نار',tmplFPS], physics:['⚽ ملعب فيزياء (كرات ترتد)',tmplPhysics], showcase:['✨ عرض المزايا (ماء ونار وثلج)',tmplShowcase], shooter:['🔫 مطاردة وإطلاق نار',tmplShooter], random:['🎲 مرحلة عشوائية جديدة',tmplRandom], platformer:['🏞 منصات',tmplPlatformer], arena:['🏟 ساحة عملات',tmplArena], maze:['🧱 متاهة',tmplLabyrinth], empty:['⬜ مشروع فارغ',tmplEmpty] };
+var TEMPLATES = { gauntlet:['🌀 ممر العقبات (بندول وعارضة وأبراج)',tmplGauntlet], parkour:['🧗 برج باركور (منصات متحركة وساقطة)',tmplParkour], puzzle:['🔑 غرفة لغز (مفتاح وباب ومؤقت)',tmplPuzzle], fps:['🎯 منظور أول: إطلاق نار',tmplFPS], physics:['⚽ ملعب فيزياء (كرات ترتد)',tmplPhysics], showcase:['✨ عرض المزايا (ماء ونار وثلج)',tmplShowcase], shooter:['🔫 مطاردة وإطلاق نار',tmplShooter], random:['🎲 مرحلة عشوائية جديدة',tmplRandom], platformer:['🏞 منصات',tmplPlatformer], arena:['🏟 ساحة عملات',tmplArena], maze:['🧱 متاهة',tmplLabyrinth], empty:['⬜ مشروع فارغ',tmplEmpty] };
 
 /* ===== الحالة ===== */
 var multi = [], state = null, selId = null, undoStack = [], redoStack = [], tool = 'move', snap = 0, mode = 'edit', run = null, dirty = false;
