@@ -151,6 +151,33 @@ function GameCore(THREE, container, data, opts){
   var ob = document.createElement('button'); ob.textContent = 'إعادة اللعب ↻'; ob.style.cssText = 'font:700 20px Tahoma;padding:10px 26px;border:0;border-radius:14px;background:#ffd23f;color:#222;cursor:pointer';
   var otxt = document.createElement('div'); overlay.appendChild(otxt); overlay.appendChild(ob);
   ui.appendChild(hudScore); ui.appendChild(hudText); ui.appendChild(msg); ui.appendChild(overlay);
+  var paused = false, playT = 0, mmOn = true;
+  var mm = document.createElement('canvas'); mm.width = 140; mm.height = 140; mm.style.cssText = 'position:absolute;bottom:10px;left:10px;width:110px;height:110px;border-radius:50%;background:#0008;border:2px solid #fff6;pointer-events:none';
+  var pb = document.createElement('button'); pb.textContent = '⏸'; pb.style.cssText = 'position:absolute;top:10px;left:10px;font:700 18px Tahoma;padding:4px 10px;border:0;border-radius:12px;background:#0006;color:#fff;cursor:pointer;pointer-events:auto';
+  var mb = document.createElement('button'); mb.textContent = '🗺'; mb.style.cssText = 'position:absolute;top:10px;left:56px;font:700 18px Tahoma;padding:4px 10px;border:0;border-radius:12px;background:#0006;color:#fff;cursor:pointer;pointer-events:auto';
+  var pov = document.createElement('div'); pov.style.cssText = 'position:absolute;inset:0;background:#000a;display:none;flex-direction:column;align-items:center;justify-content:center;gap:14px;pointer-events:auto;font-size:32px;font-weight:800';
+  pov.innerHTML = '<div>⏸ إيقاف مؤقت</div>';
+  var pr = document.createElement('button'), pq = document.createElement('button');
+  [pr, pq].forEach(function(b){ b.style.cssText = 'font:700 18px Tahoma;padding:9px 24px;border:0;border-radius:14px;background:#ffd23f;color:#222;cursor:pointer'; pov.appendChild(b); });
+  pr.textContent = 'متابعة ▶'; pq.textContent = 'إعادة المستوى ↻';
+  ui.appendChild(mm); ui.appendChild(pb); ui.appendChild(mb); ui.appendChild(pov);
+  function setPause(v){ if(ended) return; paused = v; pov.style.display = v ? 'flex' : 'none'; pb.textContent = v ? '▶' : '⏸'; }
+  pb.onclick = function(){ setPause(!paused); }; pr.onclick = function(){ setPause(false); }; pq.onclick = function(){ setPause(false); game.restart(); };
+  mb.onclick = function(){ mmOn = !mmOn; mm.style.display = mmOn ? 'block' : 'none'; };
+  var mmc = mm.getContext('2d');
+  function drawMini(){
+    if(!mmOn || !camFollow) return; var W = 140, c = mmc, p = camFollow.pos, R = 22;
+    c.clearRect(0,0,W,W); c.save(); c.beginPath(); c.arc(70,70,70,0,6.3); c.clip();
+    objs.forEach(function(o){ if(o.dead || o.type === 'light' || o.type === 'particles' || o.type === 'text') return;
+      var x = 70 + (o.pos.x - p.x) / R * 70, y = 70 + (o.pos.z - p.z) / R * 70; if(x < -10 || y < -10 || x > 150 || y > 150) return;
+      var big = o.type === 'plane' || o.type === 'water' || o.type === 'cube' && o.body === 'static';
+      c.fillStyle = o.type === 'enemy' ? '#ff4d4d' : o.type === 'coin' ? '#ffd23f' : o.type === 'goal' ? '#5cff9d' : o.type === 'player' ? '#fff' : o.type === 'water' ? '#3a7bd5' : '#8aa0ff';
+      if(big){ var w = Math.max(2, o.scale.x / R * 70), h = Math.max(2, o.scale.z / R * 70); c.globalAlpha = o.type === 'plane' ? 0.25 : 0.7; c.fillRect(x - w/2, y - h/2, w, h); c.globalAlpha = 1; }
+      else { c.beginPath(); c.arc(x, y, o.type === 'player' ? 4 : 3, 0, 6.3); c.fill(); } });
+    c.fillStyle = '#fff'; c.beginPath(); c.arc(70,70,5,0,6.3); c.fill(); c.strokeStyle = '#ffd23f'; c.lineWidth = 2; c.stroke(); c.restore();
+  }
+  var kpause = function(e){ if(e.code === 'KeyP' || e.code === 'Escape') setPause(!paused); }; window.addEventListener('keydown', kpause);
+
   var isTouch = ('ontouchstart' in window) || navigator.maxTouchPoints > 0 || opts.touch;
   var joy = {x:0,y:0}, joyBase, joyKnob, jumpBtn, actBtn, jumpHeld = false, actHeld = false;
   if(isTouch){
@@ -261,7 +288,10 @@ function GameCore(THREE, container, data, opts){
   };
   function updateHud(){ hudScore.textContent = '⭐ ' + score + (healthUsed ? '   ' + new Array(Math.max(0,health)+1).join('❤️') + new Array(Math.max(0,maxHealth-health)+1).join('🖤') : ''); }
   var wonFlag = false;
-  function finish(t, won){ if(ended) return; ended = true; wonFlag = !!won; otxt.textContent = t; ob.textContent = (won && opts.hasNext) ? 'المستوى التالي ▶' : 'إعادة اللعب ↻'; overlay.style.display = 'flex'; }
+  function finish(t, won){ if(ended) return; ended = true; wonFlag = !!won; var extra = '';
+    if(won){ var sec = Math.round(playT), stars = 1 + (sec < 90 ? 1 : 0) + (!healthUsed || health >= maxHealth ? 1 : 0), key = 'engine.best.' + (opts.key || 'game'), best = null; try{ best = parseFloat(localStorage.getItem(key)); }catch(x){} var rec = (best == null || isNaN(best) || sec < best); if(rec){ try{ localStorage.setItem(key, String(sec)); }catch(x){} }
+      extra = '\n' + new Array(stars+1).join('⭐') + new Array(4-stars).join('☆') + '\n⏱ ' + sec + ' ث' + (rec ? ' — رقم قياسي جديد! 🎉' : ' (الأفضل ' + best + ' ث)') + '\n⭐ النقاط: ' + score; }
+    otxt.style.whiteSpace = 'pre-line'; otxt.textContent = t + extra; ob.textContent = (won && opts.hasNext) ? 'المستوى التالي ▶' : 'إعادة اللعب ↻'; overlay.style.display = 'flex'; }
   ob.onclick = function(){ if(wonFlag && opts.hasNext) opts.goNext(); else game.restart(); };
 
   function burst(pos, color, n){
@@ -333,8 +363,8 @@ function GameCore(THREE, container, data, opts){
   function frame(now){
     raf = requestAnimationFrame(frame);
     var dt = Math.min(0.05, (now - last)/1000); last = now;
-    if(!ended){
-      time += dt;
+    if(!ended && !paused){
+      time += dt; playT += dt;
       objs.forEach(function(o){ if(!o.dead) call(o,'update',dt); });
       acc += dt; var step = 1/120, n = 0; while(acc >= step && n < 8){ physics(step); acc -= step; n++; }
       touches();
@@ -358,6 +388,7 @@ function GameCore(THREE, container, data, opts){
       sun.position.set(target.x + 30, 50, target.z + 20); sun.target.position.copy(target); sun.target.updateMatrixWorld();
     }
     if(flash > 0){ flash -= dt; flashEl.style.opacity = Math.max(0, flash/0.35); } else if(flashEl.style.opacity !== '0') flashEl.style.opacity = '0';
+    drawMini();
     renderer.render(scene, cam);
     fpsN++; fpsT += dt; if(fpsT >= 1){ if(opts.onFps) opts.onFps(Math.round(fpsN/fpsT)); fpsT = 0; fpsN = 0; }
   }
@@ -366,7 +397,7 @@ function GameCore(THREE, container, data, opts){
 
   return {
     game: game, objects: function(){ return objs; }, canvas: canvas, camera: cam, resize: resize,
-    stop: function(){ running = false; if(musicT) clearInterval(musicT); cancelAnimationFrame(raf); window.removeEventListener('keydown', kd); window.removeEventListener('keyup', ku); window.removeEventListener('resize', resize); if(ro) ro.disconnect(); renderer.dispose(); if(canvas.parentNode) canvas.parentNode.removeChild(canvas); if(ui.parentNode) ui.parentNode.removeChild(ui); try{ actx && actx.close(); }catch(e){} },
+    stop: function(){ running = false; if(musicT) clearInterval(musicT); cancelAnimationFrame(raf); window.removeEventListener('keydown', kd); window.removeEventListener('keydown', kpause); window.removeEventListener('keyup', ku); window.removeEventListener('resize', resize); if(ro) ro.disconnect(); renderer.dispose(); if(canvas.parentNode) canvas.parentNode.removeChild(canvas); if(ui.parentNode) ui.parentNode.removeChild(ui); try{ actx && actx.close(); }catch(e){} },
     isEnded: function(){ return ended; }, getScore: function(){ return score; }
   };
 }
@@ -388,4 +419,4 @@ function GameRuntime(THREE, container, data, opts){
   }
   load(0);
   return { get game(){ return cur.game; }, objects: function(){ return cur.objects(); }, stop: function(){ if(cur) cur.stop(); cur = null; }, isEnded: function(){ return cur.isEnded(); }, getScore: function(){ return cur.getScore(); }, resize: function(){ cur.resize(); }, level: function(){ return idx; } };
-                                          }
+}
