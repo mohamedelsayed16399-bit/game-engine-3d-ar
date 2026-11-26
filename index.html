@@ -101,7 +101,7 @@ dialog pre{direction:ltr;text-align:left;background:#11131d;padding:8px;border-r
 <dialog id="dlgOpen"><h3>مشاريعي المحفوظة</h3><ul id="projList"></ul><button class="btn close">إغلاق</button></dialog>
 <dialog id="dlgSet"><h3>إعدادات اللعبة</h3>
  <div class="row"><label>العنوان</label><input id="sName"></div>
- <div class="row"><label>فلتر الألوان</label><select id="sGrade"><option value="none">عادي</option><option value="warm">دافئ</option><option value="cold">بارد</option><option value="noir">أبيض وأسود</option><option value="vivid">زاهي</option><option value="retro">قديم</option></select><label class="chk"><input type="checkbox" id="sVig"> تعتيم الأطراف</label></div>
+ <div class="row"><label>فلتر الألوان</label><select id="sGrade"><option value="none">عادي</option><option value="warm">دافئ</option><option value="cold">بارد</option><option value="noir">أبيض وأسود</option><option value="vivid">زاهي</option><option value="retro">قديم</option></select><label class="chk"><input type="checkbox" id="sVig"> تعتيم الأطراف</label><label class="chk"><input type="checkbox" id="sCycle"> دورة ليل ونهار</label></div>
  <div class="row"><label>السماء</label><input type="color" id="sSky"><label class="chk"><input type="checkbox" id="sFog"> ضباب</label></div>
  <div class="row"><label>الجاذبية</label><input type="number" id="sGrav"></div>
  <div class="row"><label>الكاميرا</label><select id="sCam"><option value="follow">خلف اللاعب</option><option value="first">منظور أول</option><option value="top">من فوق</option><option value="free">ثابتة</option></select></div>
@@ -130,6 +130,6 @@ game.camera.follow(obj)  game.camera.shake(a)</pre>
 <p class="hint">٥. اضغط ▶ لتجربة اللعبة، و ⬇ لتصدير ملف HTML واحد جاهز للنشر.</p><button class="btn close">إغلاق</button></dialog>
 <script>window.THREE_SRC="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js";</script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
-<script src="runtime.js?v=3"></script>
-<script src="editor.js?v=4"></script>
+<script src="runtime.js?v=4"></script>
+<script src="editor.js?v=5"></script>
 </body></html>
