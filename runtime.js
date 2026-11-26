@@ -121,7 +121,8 @@ function buildMesh(THREE, o, opts){
   return group;
 }
 
-var DEFAULT_SETTINGS = { skyKind:'solid', music:false, sky:'#87c3ff', fog:true, gravity:24, sun:1.1, ambient:0.55, camera:'follow', camDist:9, camHeight:5, title:'لعبتي' };
+var GRADES = { none:'', warm:'sepia(0.25) saturate(1.2) hue-rotate(-8deg)', cold:'saturate(0.9) hue-rotate(15deg) brightness(1.03)', noir:'grayscale(1) contrast(1.25)', vivid:'saturate(1.6) contrast(1.1)', retro:'sepia(0.5) contrast(1.15) saturate(1.3)' };
+var DEFAULT_SETTINGS = { grade:'none', vig:false, skyKind:'solid', music:false, sky:'#87c3ff', fog:true, gravity:24, sun:1.1, ambient:0.55, camera:'follow', camDist:9, camHeight:5, title:'لعبتي' };
 
 function GameCore(THREE, container, data, opts){
   opts = opts || {};
@@ -144,6 +145,8 @@ function GameCore(THREE, container, data, opts){
   var ui = document.createElement('div'); ui.style.cssText = 'position:absolute;inset:0;pointer-events:none;font-family:Tahoma,Arial,sans-serif;direction:rtl;color:#fff;user-select:none';
   if(getComputedStyle(container).position === 'static') container.style.position = 'relative'; container.appendChild(ui);
   var hudScore = document.createElement('div'); hudScore.style.cssText = 'position:absolute;top:10px;right:14px;font-size:22px;font-weight:700;text-shadow:0 2px 6px #000a;background:#0006;padding:4px 12px;border-radius:12px';
+  canvas.style.filter = GRADES[S.grade] || '';
+  if(S.vig){ var vg = document.createElement('div'); vg.style.cssText = 'position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse at center,transparent 55%,#000a 100%)'; ui.appendChild(vg); }
   var flashEl = document.createElement('div'); flashEl.style.cssText = 'position:absolute;inset:0;background:radial-gradient(transparent 40%,#ff0000aa);opacity:0'; ui.appendChild(flashEl);
   var hudText = document.createElement('div'); hudText.style.cssText = 'position:absolute;top:10px;left:50%;transform:translateX(-50%);font-size:18px;text-shadow:0 2px 6px #000a;background:#0005;padding:4px 12px;border-radius:12px;display:none';
   var msg = document.createElement('div'); msg.style.cssText = 'position:absolute;top:30%;left:50%;transform:translateX(-50%);font-size:30px;font-weight:800;text-shadow:0 3px 10px #000;text-align:center;display:none;max-width:90%';
