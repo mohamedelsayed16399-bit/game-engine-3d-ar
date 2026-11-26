@@ -27,7 +27,7 @@ body{display:flex;flex-direction:column;height:100dvh}
 .sp{overflow:auto;flex:1;padding:8px;display:none}
 #hier{list-style:none;margin:0;padding:0;max-height:200px;overflow:auto;border:1px solid #2b3050;border-radius:8px}
 #hier li{display:flex;gap:6px;align-items:center;padding:5px 8px;cursor:pointer;border-bottom:1px solid #23273d}
-#hier li.sel{background:#3a4890}#hier li .nm{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.hasS{font:11px monospace;color:#7de3ff;direction:ltr}
+#hier li.sel{background:#3a4890}#hier li.sel2{background:#2a3a66}#hier li .nm{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.hasS{font:11px monospace;color:#7de3ff;direction:ltr}
 #addGrid{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin:8px 0}
 #prefabGrid{display:grid;grid-template-columns:repeat(2,1fr);gap:5px;margin:6px 0}#prefabGrid button{font-size:12px;padding:7px 2px}
 #addGrid button{padding:8px 2px;font-size:12px;line-height:1.2}
@@ -73,13 +73,13 @@ dialog pre{direction:ltr;text-align:left;background:#11131d;padding:8px;border-r
    <select id="snapSel" class="btn sm"><option value="0">حر</option><option value="0.25">سنب 0.25</option><option value="0.5">سنب 0.5</option><option value="1">سنب 1</option></select>
    <button class="btn sm" id="bFocus">🎯</button></div>
   <div id="levelBar" style="position:absolute;top:44px;right:8px;z-index:3;display:flex;gap:4px;flex-wrap:wrap"></div>
-  <div id="vhint">اسحب للدوران • عصابتان/عجلة للتكبير • اضغط كائناً لتحديده</div>
+  <div id="vhint">اسحب للدوران • عصابتان/عجلة للتكبير • اضغط كائناً لتحديده • Shift لتحديد متعدد</div>
  </div>
  <div id="side">
   <div class="stabs"><button data-s="objs">الكائنات (<span id="objCount">0</span>)</button><button data-s="props">الخصائص</button></div>
   <div class="sp" id="s-objs">
    <ul id="hier"></ul>
-   <div style="display:flex;gap:6px;margin-top:8px"><button class="btn sm" id="bDup">⧉ نسخ</button><button class="btn sm" id="bDel">🗑 حذف</button></div>
+   <div style="display:flex;gap:6px;margin-top:8px"><button class="btn sm" id="bDup">⧉ نسخ</button><button class="btn sm" id="bDel">🗑 حذف</button><button class="btn sm" id="bMulti" title="تحديد متعدد">☑ متعدد</button><button class="btn sm" id="bAlign" title="محاذاة الارتفاع">⇕ محاذاة</button><button class="btn sm" id="bGround" title="على الأرض">⤓ أرض</button></div>
    <div class="hint" style="margin-top:8px">إضافة كائن:</div>
    <div id="addGrid">
     <button class="btn" data-t="cube">🟦<br>مكعب</button><button class="btn" data-t="sphere">🔴<br>كرة</button><button class="btn" data-t="cylinder">🛢<br>أسطوانة</button><button class="btn" data-t="cone">🔺<br>مخروط</button>
@@ -129,6 +129,6 @@ game.camera.follow(obj)  game.camera.shake(a)</pre>
 <p class="hint">٥. اضغط ▶ لتجربة اللعبة، و ⬇ لتصدير ملف HTML واحد جاهز للنشر.</p><button class="btn close">إغلاق</button></dialog>
 <script>window.THREE_SRC="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js";</script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
-<script src="runtime.js?v=1"></script>
-<script src="editor.js?v=1"></script>
+<script src="runtime.js"></script>
+<script src="editor.js"></script>
 </body></html>
