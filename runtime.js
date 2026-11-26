@@ -155,7 +155,7 @@ function GameCore(THREE, container, data, opts){
   var otxt = document.createElement('div'); overlay.appendChild(otxt); overlay.appendChild(ob);
   ui.appendChild(hudScore); ui.appendChild(hudText); ui.appendChild(msg); ui.appendChild(overlay);
   var paused = false, playT = 0, mmOn = true;
-  var mm = document.createElement('canvas'); mm.width = 140; mm.height = 140; mm.style.cssText = 'position:absolute;bottom:10px;left:10px;width:110px;height:110px;border-radius:50%;background:#0008;border:2px solid #fff6;pointer-events:none';
+  var mm = document.createElement('canvas'); mm.width = 140; mm.height = 140; mm.style.cssText = 'position:absolute;top:52px;left:10px;width:96px;height:96px;border-radius:50%;background:#0008;border:2px solid #fff6;pointer-events:none';
   var pb = document.createElement('button'); pb.textContent = '⏸'; pb.style.cssText = 'position:absolute;top:10px;left:10px;font:700 18px Tahoma;padding:4px 10px;border:0;border-radius:12px;background:#0006;color:#fff;cursor:pointer;pointer-events:auto';
   var mb = document.createElement('button'); mb.textContent = '🗺'; mb.style.cssText = 'position:absolute;top:10px;left:56px;font:700 18px Tahoma;padding:4px 10px;border:0;border-radius:12px;background:#0006;color:#fff;cursor:pointer;pointer-events:auto';
   var pov = document.createElement('div'); pov.style.cssText = 'position:absolute;inset:0;background:#000a;display:none;flex-direction:column;align-items:center;justify-content:center;gap:14px;pointer-events:auto;font-size:32px;font-weight:800';
