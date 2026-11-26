@@ -397,8 +397,14 @@ function renderInspector(){
   }
   if(o.type === 'text') h += '<div class="row"><label>النص</label><textarea id="iText" rows="2" style="flex:1"></textarea></div>';
   if(o.type === 'particles') h += '<div class="row"><label>النوع</label><select id="iKind">' + [['fire','نار'],['snow','ثلج'],['smoke','دخان'],['sparkle','بريق']].map(function(t){ return '<option value="'+t[0]+'"'+((o.kind||'fire')===t[0]?' selected':'')+'>'+t[1]+'</option>'; }).join('') + '</select></div>';
+  var an = o.anim || { keys: [], mode: 'loop' };
+  h += '<div class="hint" style="margin-top:8px">🎬 أنيميشن (مفاتيح الحركة): ' + an.keys.length + ' مفتاح</div><div class="row"><label>الوقت (ث)</label><input type="number" id="aT" value="' + (an.keys.length ? an.keys[an.keys.length-1].t + 2 : 0) + '" min="0" step="0.5" style="width:70px"><button class="btn sm" id="aAdd">＋ مفتاح بالوضع الحالي</button></div><div class="row"><label>النمط</label><select id="aMode"><option value="loop">تكرار</option><option value="pingpong">ذهاب وإياب</option><option value="once">مرة واحدة</option></select><button class="btn sm" id="aClr">مسح</button></div>';
   h += '<div class="row"><label>سكربت</label><select id="iPreset"><option value="">— قالب جاهز —</option>' + Object.keys(SCRIPT_NAMES).map(function(k){ return '<option value="'+k+'">'+SCRIPT_NAMES[k]+'</option>'; }).join('') + '</select><button id="iEditS" class="btn sm">✎ تحرير</button></div>';
   box.innerHTML = h; $('#iName').value = o.name; $('#iTag').value = o.tag || '';
+  $('#aMode').value = an.mode || 'loop';
+  $('#aAdd').onclick = function(){ pushUndo(); if(!o.anim) o.anim = { keys: [], mode: 'loop' }; var t = parseFloat($('#aT').value) || 0; var ks = o.anim.keys.filter(function(k){ return k.t !== t; }); ks.push({ t: t, pos: o.pos.slice(), rot: o.rot.slice(), scale: o.scale.slice() }); ks.sort(function(a, b){ return a.t - b.t; }); o.anim.keys = ks; renderInspector(); toast('أُضيف مفتاح عند ' + t + ' ث (حرّك الكائن ثم أضف مفتاحاً آخر)'); };
+  $('#aMode').onchange = function(){ pushUndo(); if(!o.anim) o.anim = { keys: [], mode: 'loop' }; o.anim.mode = this.value; };
+  $('#aClr').onclick = function(){ pushUndo(); delete o.anim; renderInspector(); };
   $('#iName').oninput = function(){ o.name = this.value; renderHierarchy(); }; $('#iName').onchange = function(){ pushUndo(); };
   $('#iTag').onchange = function(){ pushUndo(); o.tag = this.value; };
   $$('input[data-k]', box).forEach(function(inp){ inp.onchange = function(){ pushUndo(); var v = parseFloat(this.value); if(isNaN(v)) v = 0; if(this.dataset.k === 'scale' && v <= 0) v = 0.1; o[this.dataset.k][+this.dataset.i] = v; syncMesh(o); if(o.tex !== 'none') rebuildMesh(o); updateSelVis(); }; });
