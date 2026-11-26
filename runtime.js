@@ -1,5 +1,5 @@
 /* ===== محرك اللعبة: Runtime (يستخدم في المحرر وفي اللعبة المُصدَّرة) ===== */
-var BASE = { cube:[1,1,1], sphere:[1,1,1], cylinder:[1,1,1], cone:[1,1,1], plane:[1,0.1,1], player:[0.8,1.6,0.8], coin:[0.8,0.8,0.2], enemy:[1,1,1], goal:[1,2,1], light:[0.3,0.3,0.3], torus:[1.2,1.2,0.4], text:[2,1,0.05], particles:[1,1,1], water:[1,0.1,1] };
+var BASE = { model:[1,1,1], cube:[1,1,1], sphere:[1,1,1], cylinder:[1,1,1], cone:[1,1,1], plane:[1,0.1,1], player:[0.8,1.6,0.8], coin:[0.8,0.8,0.2], enemy:[1,1,1], goal:[1,2,1], light:[0.3,0.3,0.3], torus:[1.2,1.2,0.4], text:[2,1,0.05], particles:[1,1,1], water:[1,0.1,1] };
 var TYPE_AR = { cube:'مكعب', sphere:'كرة', cylinder:'أسطوانة', cone:'مخروط', plane:'أرضية', player:'لاعب', coin:'عملة', enemy:'عدو', goal:'هدف', light:'ضوء', torus:'حلقة', text:'لافتة نص', particles:'جسيمات', water:'ماء' };
 
 function makeTex(THREE, kind, color){
@@ -104,7 +104,8 @@ function buildMesh(THREE, o, opts){
     else if(o.tex && o.tex !== 'none'){ mat.map = makeTex(THREE, o.tex, '#ffffff'); var s = o.scale || [1,1,1]; mat.map.repeat.set(Math.max(1,Math.round(s[0])), Math.max(1,Math.round(s[o.type==='plane'?2:2]))); mat.needsUpdate = true; }
     if(o.type === 'water'){ mat.map = makeWaterTex(THREE); mat.map.repeat.set(Math.max(1,Math.round((o.scale||[1,1,1])[0]/2)), Math.max(1,Math.round((o.scale||[1,1,1])[2]/2))); mat.transparent = true; mat.opacity = 0.72; mat.roughness = 0.15; mat.metalness = 0.2; mat.color = new THREE.Color('#ffffff'); }
     if(o.opacity != null && o.opacity < 1 && o.type !== 'water'){ mat.transparent = true; mat.opacity = o.opacity; }
-    var m = new THREE.Mesh(makeGeometry(THREE, o.type), mat);
+    var geo; if(o.type === 'model' && o.model){ geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.Float32BufferAttribute(o.model, 3)); geo.computeVertexNormals(); } else geo = makeGeometry(THREE, o.type);
+    var m = new THREE.Mesh(geo, mat);
     m.castShadow = true; m.receiveShadow = true;
     if(o.type === 'coin') m.rotation.x = Math.PI/2;
     if(o.type === 'torus') m.rotation.x = 0;
@@ -436,4 +437,4 @@ function GameRuntime(THREE, container, data, opts){
   }
   load(0);
   return { get game(){ return cur.game; }, objects: function(){ return cur.objects(); }, stop: function(){ if(cur) cur.stop(); cur = null; }, isEnded: function(){ return cur.isEnded(); }, getScore: function(){ return cur.getScore(); }, resize: function(){ cur.resize(); }, level: function(){ return idx; } };
-}
+                         }
