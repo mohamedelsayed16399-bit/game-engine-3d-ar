@@ -85,6 +85,7 @@ dialog pre{direction:ltr;text-align:left;background:#11131d;padding:8px;border-r
     <button class="btn" data-t="cube">🟦<br>مكعب</button><button class="btn" data-t="sphere">🔴<br>كرة</button><button class="btn" data-t="cylinder">🛢<br>أسطوانة</button><button class="btn" data-t="cone">🔺<br>مخروط</button>
     <button class="btn" data-t="plane">▭<br>أرضية</button><button class="btn" data-t="torus">⭕<br>حلقة</button><button class="btn" data-t="light">💡<br>ضوء</button><button class="btn" id="bCrate">📦<br>صندوق</button>
     <button class="btn" data-t="player">🧍<br>لاعب</button><button class="btn" data-t="coin">🪙<br>عملة</button><button class="btn" data-t="enemy">👾<br>عدو</button><button class="btn" data-t="goal">🏁<br>هدف</button><button class="btn" data-t="checkpoint">🚩<br>نقطة حفظ</button><button class="btn" data-t="text">🔤<br>لافتة</button><button class="btn" data-t="particles">✨<br>جسيمات</button><button class="btn" data-t="water">🌊<br>ماء</button>
+   <button class="btn" id="bObj" style="grid-column:1/-1">📥 استيراد موديل OBJ</button><input type="file" id="fObj" accept=".obj" hidden>
    </div>
    <div class="hint">مكتبة جاهزة:</div><div id="prefabGrid"></div><div class="hint">أصولي المحفوظة:</div><div id="customPrefabs" style="display:grid;grid-template-columns:repeat(2,1fr);gap:5px;margin:6px 0"></div><button class="btn sm" id="bSavePrefab">⭐ حفظ المحدد كأصل</button>
   </div>
@@ -130,6 +131,6 @@ game.camera.follow(obj)  game.camera.shake(a)</pre>
 <p class="hint">٥. اضغط ▶ لتجربة اللعبة، و ⬇ لتصدير ملف HTML واحد جاهز للنشر.</p><button class="btn close">إغلاق</button></dialog>
 <script>window.THREE_SRC="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js";</script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
-<script src="runtime.js?v=6"></script>
-<script src="editor.js?v=8"></script>
+<script src="runtime.js?v=7"></script>
+<script src="editor.js?v=9"></script>
 </body></html>
