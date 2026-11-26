@@ -238,6 +238,7 @@ function GameCore(THREE, container, data, opts){
     ob.rot = new THREE.Euler(THREE.MathUtils.degToRad(o.rot[0]), THREE.MathUtils.degToRad(o.rot[1]), THREE.MathUtils.degToRad(o.rot[2]), 'YXZ');
     ob.scale = new THREE.Vector3(o.scale[0], o.scale[1], o.scale[2]);
     ob.vel = new THREE.Vector3();
+    ob.anim = (o.anim && o.anim.keys && o.anim.keys.length > 1) ? o.anim : null;
     ob.bounce = o.bounce || 0; ob.startPos = ob.pos.clone(); ob.checkpoint = null; ob.prev = ob.pos.clone(); ob.delta = new THREE.Vector3();
     ob.mesh = buildMesh(THREE, o);
     scene.add(ob.mesh);
@@ -363,12 +364,23 @@ function GameCore(THREE, container, data, opts){
   /* حلقة اللعب */
   var last = performance.now(), acc = 0, raf = 0, camPos = new THREE.Vector3(0,6,12), fpsT = 0, fpsN = 0;
   function resize(){ var w = container.clientWidth || 800, h = container.clientHeight || 450; renderer.setSize(w, h, false); cam.aspect = w/h; cam.updateProjectionMatrix(); }
+  function animStep(o, t){
+    var A = o.anim, ks = A.keys, dur = ks[ks.length-1].t; if(dur <= 0) return;
+    var m = A.mode === 'once' ? Math.min(t, dur) : A.mode === 'pingpong' ? (function(){ var q = t % (2*dur); return q > dur ? 2*dur - q : q; })() : (t % dur);
+    var i = 0; while(i < ks.length - 2 && m > ks[i+1].t) i++;
+    var a = ks[i], b = ks[i+1], span = b.t - a.t, f = span > 0 ? Math.min(1, Math.max(0, (m - a.t) / span)) : 1; f = f * f * (3 - 2 * f);
+    function L(x, y){ return x + (y - x) * f; }
+    o.pos.set(L(a.pos[0], b.pos[0]), L(a.pos[1], b.pos[1]), L(a.pos[2], b.pos[2]));
+    o.rot.set(THREE.MathUtils.degToRad(L(a.rot[0], b.rot[0])), THREE.MathUtils.degToRad(L(a.rot[1], b.rot[1])), THREE.MathUtils.degToRad(L(a.rot[2], b.rot[2])));
+    o.scale.set(L(a.scale[0], b.scale[0]), L(a.scale[1], b.scale[1]), L(a.scale[2], b.scale[2]));
+  }
   function frame(now){
     raf = requestAnimationFrame(frame);
     var dt = Math.min(0.05, (now - last)/1000); last = now;
     if(!ended && !paused){
       time += dt; playT += dt;
       objs.forEach(function(o){ if(!o.dead) call(o,'update',dt); });
+      objs.forEach(function(o){ if(o.anim && !o.dead) animStep(o, time); });
       acc += dt; var step = 1/120, n = 0; while(acc >= step && n < 8){ physics(step); acc -= step; n++; }
       touches();
     }
