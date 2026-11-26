@@ -122,7 +122,7 @@ function buildMesh(THREE, o, opts){
 }
 
 var GRADES = { none:'', warm:'sepia(0.25) saturate(1.2) hue-rotate(-8deg)', cold:'saturate(0.9) hue-rotate(15deg) brightness(1.03)', noir:'grayscale(1) contrast(1.25)', vivid:'saturate(1.6) contrast(1.1)', retro:'sepia(0.5) contrast(1.15) saturate(1.3)' };
-var DEFAULT_SETTINGS = { grade:'none', vig:false, skyKind:'solid', music:false, sky:'#87c3ff', fog:true, gravity:24, sun:1.1, ambient:0.55, camera:'follow', camDist:9, camHeight:5, title:'لعبتي' };
+var DEFAULT_SETTINGS = { grade:'none', vig:false, cycle:false, skyKind:'solid', music:false, sky:'#87c3ff', fog:true, gravity:24, sun:1.1, ambient:0.55, camera:'follow', camDist:9, camHeight:5, title:'لعبتي' };
 
 function GameCore(THREE, container, data, opts){
   opts = opts || {};
@@ -136,7 +136,7 @@ function GameCore(THREE, container, data, opts){
   if(S.skyKind && S.skyKind !== 'solid'){ var sk = makeSky(THREE, S.skyKind); scene.background = sk.tex; fogCol = sk.fog; if(S.skyKind === 'night' || S.skyKind === 'space'){ var stars = makeStars(THREE, 500); scene.add(stars); } }
   if(S.fog) scene.fog = new THREE.Fog(fogCol, 40, 140);
   var cam = new THREE.PerspectiveCamera(60, 1, 0.1, 400); cam.position.set(0,6,12);
-  scene.add(new THREE.HemisphereLight(0xffffff, 0x445566, S.ambient));
+  var hemi = new THREE.HemisphereLight(0xffffff, 0x445566, S.ambient); scene.add(hemi); var bg0 = scene.background && scene.background.isColor ? scene.background.clone() : null, fog0 = scene.fog ? scene.fog.color.clone() : null;
   var sun = new THREE.DirectionalLight(0xffffff, S.sun); sun.position.set(30,50,20); sun.castShadow = true;
   sun.shadow.mapSize.set(2048,2048); var sc = sun.shadow.camera; sc.left = sc.bottom = -45; sc.right = sc.top = 45; sc.near = 1; sc.far = 140; sun.shadow.bias = -0.0005;
   scene.add(sun);
@@ -391,6 +391,8 @@ function GameCore(THREE, container, data, opts){
       sun.position.set(target.x + 30, 50, target.z + 20); sun.target.position.copy(target); sun.target.updateMatrixWorld();
     }
     if(flash > 0){ flash -= dt; flashEl.style.opacity = Math.max(0, flash/0.35); } else if(flashEl.style.opacity !== '0') flashEl.style.opacity = '0';
+    if(S.cycle){ var ph = (time * 0.04) % 1, dayk = Math.max(0.12, Math.sin(ph * 6.2832) * 0.5 + 0.55); sun.intensity = S.sun * dayk; hemi.intensity = S.ambient * (0.35 + 0.65 * dayk); sun.color.setRGB(1, 0.75 + 0.25 * dayk, 0.55 + 0.45 * dayk);
+      if(bg0){ scene.background.copy(bg0).multiplyScalar(0.25 + 0.75 * dayk); if(scene.fog && fog0) scene.fog.color.copy(fog0).multiplyScalar(0.25 + 0.75 * dayk); } }
     drawMini();
     renderer.render(scene, cam);
     fpsN++; fpsT += dt; if(fpsT >= 1){ if(opts.onFps) opts.onFps(Math.round(fpsN/fpsT)); fpsT = 0; fpsN = 0; }
