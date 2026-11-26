@@ -203,8 +203,8 @@ function tmplLabyrinth(){
 var TEMPLATES = { puzzle:['🔑 غرفة لغز (مفتاح وباب ومؤقت)',tmplPuzzle], fps:['🎯 منظور أول: إطلاق نار',tmplFPS], physics:['⚽ ملعب فيزياء (كرات ترتد)',tmplPhysics], showcase:['✨ عرض المزايا (ماء ونار وثلج)',tmplShowcase], shooter:['🔫 مطاردة وإطلاق نار',tmplShooter], random:['🎲 مرحلة عشوائية جديدة',tmplRandom], platformer:['🏞 منصات',tmplPlatformer], arena:['🏟 ساحة عملات',tmplArena], maze:['🧱 متاهة',tmplLabyrinth], empty:['⬜ مشروع فارغ',tmplEmpty] };
 
 /* ===== الحالة ===== */
-var state = null, selId = null, undoStack = [], redoStack = [], tool = 'move', snap = 0, mode = 'edit', run = null, dirty = false;
-var meshes = {};
+var multi = [], state = null, selId = null, undoStack = [], redoStack = [], tool = 'move', snap = 0, mode = 'edit', run = null, dirty = false;
+var meshes = {}, multiMode = false;
 function relink(){ if(state.levels){ if(state.active == null || !state.levels[state.active]) state.active = 0; state.objects = state.levels[state.active].objects; } }
 function syncLevels(){ if(state.levels) state.levels[state.active].objects = state.objects; }
 function snapshot(){ syncLevels(); return JSON.stringify(state); }
@@ -258,16 +258,18 @@ var AXC = [0xff4d4d, 0x4dff6a, 0x4d8dff], AXV = [new THREE.Vector3(1,0,0), new T
   }
 })();
 function updateSelVis(){
-  if(sel.box){ scene.remove(sel.box); sel.box = null; }
+  if(sel.box){ scene.remove(sel.box); sel.box = null; } if(sel.extra){ sel.extra.forEach(function(b){ scene.remove(b); }); } sel.extra = [];
+  multi = multi.filter(function(id){ return !!getObj(id); }); if(selId && multi.indexOf(selId) < 0) multi.push(selId);
   var o = selId && getObj(selId), g = o && meshes[selId];
   gizmo.visible = !!g && mode === 'edit';
   if(g){ sel.box = new THREE.BoxHelper(g, 0xffff00); scene.add(sel.box); }
+  multi.forEach(function(id){ if(id !== selId && meshes[id]){ var b = new THREE.BoxHelper(meshes[id], 0x66ccff); scene.add(b); sel.extra.push(b); } });
 }
 function updateGizmoPos(){
   var o = selId && getObj(selId); if(!o) return;
   gizmo.position.set(o.pos[0],o.pos[1],o.pos[2]);
   var d = cam.position.distanceTo(gizmo.position); gizmo.scale.setScalar(Math.max(0.5, d*0.11));
-  if(sel.box) sel.box.update();
+  if(sel.box) sel.box.update(); if(sel.extra) sel.extra.forEach(function(b){ b.update(); });
 }
 function resizeEd(){ var w = host.clientWidth, h = host.clientHeight; if(!w||!h) return; renderer.setSize(w,h,false); cam.aspect = w/h; cam.updateProjectionMatrix(); }
 new ResizeObserver(resizeEd).observe(host);
@@ -289,7 +291,7 @@ canvas.addEventListener('pointerdown', function(e){
       if(hit){
         var o = getObj(selId), ax = hit.object.userData.axis;
         var d = AXV[ax].clone(), p0 = new THREE.Vector3(o.pos[0],o.pos[1],o.pos[2]);
-        drag = { axis:ax, o:o, d:d, p0:p0, t0:axisParam({p0:p0}, d, ray.ray), start:{pos:o.pos.slice(), rot:o.rot.slice(), scale:o.scale.slice()}, moved:false };
+        drag = { others: multi.filter(function(i){ return i !== selId; }).map(function(i){ var q = getObj(i); return {o:q, pos:q.pos.slice(), scale:q.scale.slice(), rot:q.rot.slice()}; }), axis:ax, o:o, d:d, p0:p0, t0:axisParam({p0:p0}, d, ray.ray), start:{pos:o.pos.slice(), rot:o.rot.slice(), scale:o.scale.slice()}, moved:false };
         ptrs[e.pointerId].gizmo = true; return;
       }
     }
@@ -306,7 +308,8 @@ canvas.addEventListener('pointermove', function(e){
     if(tool === 'move'){ var v = drag.start.pos[ax] + t; if(snap) v = Math.round(v/snap)*snap; o.pos[ax] = +v.toFixed(3); }
     else if(tool === 'scale'){ var sv = Math.max(0.05, drag.start.scale[ax] + t); if(snap) sv = Math.max(snap, Math.round(sv/snap)*snap); o.scale[ax] = +sv.toFixed(3); }
     else { var rv = drag.start.rot[ax] + t*45; if(snap) rv = Math.round(rv/15)*15; o.rot[ax] = +rv.toFixed(1); }
-    drag.moved = true; syncMesh(o); if(tool === 'scale' && o.tex !== 'none') rebuildMesh(o); fillInspectorValues(); return;
+    drag.moved = true; syncMesh(o);
+    drag.others.forEach(function(q){ var dlt = o[tool === 'move' ? 'pos' : tool === 'scale' ? 'scale' : 'rot'][ax] - drag.start[tool === 'move' ? 'pos' : tool === 'scale' ? 'scale' : 'rot'][ax]; if(tool === 'scale') q.o.scale[ax] = Math.max(0.05, q.scale[ax] + dlt); else if(tool === 'move') q.o.pos[ax] = +(q.pos[ax] + dlt).toFixed(3); else q.o.rot[ax] = +(q.rot[ax] + dlt).toFixed(1); syncMesh(q.o); }); if(tool === 'scale' && o.tex !== 'none') rebuildMesh(o); fillInspectorValues(); return;
   }
   if(n >= 2 && pinch){
     var ks = Object.keys(ptrs), d = Math.hypot(ptrs[ks[0]].x-ptrs[ks[1]].x, ptrs[ks[0]].y-ptrs[ks[1]].y); orbit.dist = Math.max(2, Math.min(150, pinch.dist * pinch.d / Math.max(20,d)));
@@ -320,10 +323,10 @@ canvas.addEventListener('pointermove', function(e){
 function panBy(dx, dy){ var k = orbit.dist*0.0016, right = new THREE.Vector3(), up = new THREE.Vector3(0,1,0); cam.getWorldDirection(right); right.cross(up).normalize(); orbit.target.addScaledVector(right, -dx*k); var fw = new THREE.Vector3(Math.sin(orbit.yaw),0,Math.cos(orbit.yaw)); orbit.target.addScaledVector(fw, -dy*k); }
 function endPtr(e){
   var p = ptrs[e.pointerId]; if(!p) return;
-  if(drag && p.gizmo){ if(drag.moved){ var cur = {pos:drag.o.pos.slice(),rot:drag.o.rot.slice(),scale:drag.o.scale.slice()}; var o = drag.o; o.pos = drag.start.pos; o.rot = drag.start.rot; o.scale = drag.start.scale; pushUndo(); o.pos = cur.pos; o.rot = cur.rot; o.scale = cur.scale; markDirty(); renderInspector(); } drag = null; }
+  if(drag && p.gizmo){ if(drag.moved){ var cur = {pos:drag.o.pos.slice(),rot:drag.o.rot.slice(),scale:drag.o.scale.slice()}, curO = drag.others.map(function(q){ return {pos:q.o.pos.slice(),rot:q.o.rot.slice(),scale:q.o.scale.slice()}; }); var o = drag.o; o.pos = drag.start.pos; o.rot = drag.start.rot; o.scale = drag.start.scale; drag.others.forEach(function(q){ q.o.pos = q.pos; q.o.rot = q.rot; q.o.scale = q.scale; }); pushUndo(); o.pos = cur.pos; o.rot = cur.rot; o.scale = cur.scale; drag.others.forEach(function(q,i){ q.o.pos = curO[i].pos; q.o.rot = curO[i].rot; q.o.scale = curO[i].scale; }); markDirty(); renderInspector(); } drag = null; }
   else if(p.orbit && Math.hypot(e.clientX-p.sx, e.clientY-p.sy) < 6 && p.btn === 0 && !pinch){
     setRay(e); var picks = []; content.children.forEach(function(g){ if(g.userData.pick) picks.push(g.userData.pick); });
-    var hit = ray.intersectObjects(picks, false)[0]; select(hit ? hit.object.userData.oid : null);
+    var hit = ray.intersectObjects(picks, false)[0]; select(hit ? hit.object.userData.oid : null, hit && (e.shiftKey || e.ctrlKey || e.metaKey || multiMode));
   }
   delete ptrs[e.pointerId]; if(Object.keys(ptrs).length < 2) pinch = null;
 }
@@ -331,13 +334,13 @@ canvas.addEventListener('pointerup', endPtr); canvas.addEventListener('pointerca
 canvas.addEventListener('wheel', function(e){ e.preventDefault(); orbit.dist = Math.max(2, Math.min(150, orbit.dist * (1 + e.deltaY*0.001))); }, {passive:false});
 
 /* ===== واجهة المحرر ===== */
-function select(id){ selId = id; if(id && matchMedia('(max-width:820px)').matches) showSide('props'); updateSelVis(); renderHierarchy(); renderInspector(); }
+function select(id, add){ if(add && id){ var ix = multi.indexOf(id); if(ix >= 0){ multi.splice(ix,1); if(selId === id) selId = multi.length ? multi[multi.length-1] : null; } else { multi.push(id); selId = id; } } else { multi = id ? [id] : []; selId = id; } if(id && matchMedia('(max-width:820px)').matches) showSide('props'); updateSelVis(); renderHierarchy(); renderInspector(); }
 function ICON(t){ return {cube:'🟦',sphere:'🔴',cylinder:'🛢',cone:'🔺',torus:'⭕',plane:'▭',player:'🧍',coin:'🪙',enemy:'👾',goal:'🏁',light:'💡',text:'🔤',particles:'✨',water:'🌊',checkpoint:'🚩'}[t] || '◼'; }
 function renderHierarchy(){
   var ul = $('#hier'); ul.innerHTML = '';
   state.objects.forEach(function(o){
-    var li = document.createElement('li'); li.className = o.id === selId ? 'sel' : ''; li.innerHTML = '<span class="ic">' + ICON(o.type) + '</span><span class="nm"></span>' + (o.script ? '<span class="hasS" title="سكربت">{ }</span>' : '');
-    $('.nm', li).textContent = o.name; li.onclick = function(){ select(o.id); };
+    var li = document.createElement('li'); li.className = (o.id === selId ? 'sel' : (multi.indexOf(o.id) >= 0 ? 'sel2' : '')); li.innerHTML = '<span class="ic">' + ICON(o.type) + '</span><span class="nm"></span>' + (o.script ? '<span class="hasS" title="سكربت">{ }</span>' : '');
+    $('.nm', li).textContent = o.name; li.onclick = function(ev){ select(o.id, ev.shiftKey || ev.ctrlKey || ev.metaKey || multiMode); };
     ul.appendChild(li);
   });
   $('#objCount').textContent = state.objects.length;
@@ -411,9 +414,12 @@ function customPrefabs(){ try{ return JSON.parse(localStorage.getItem('engine.pr
 function renderCustomPrefabs(){ var g = $('#customPrefabs'); g.innerHTML = ''; var cp = customPrefabs(); Object.keys(cp).forEach(function(n){ var b = document.createElement('button'); b.className = 'btn'; b.textContent = '⭐ ' + n; b.title = 'اضغط للإضافة، ضغطة طويلة للحذف'; var t; b.onclick = function(){ pushUndo(); var o = JSON.parse(JSON.stringify(cp[n])); o.id = uid++; var tg = orbit.target; o.pos = [Math.round(tg.x), o.pos[1], Math.round(tg.z)]; state.objects.push(o); addMesh(o); select(o.id); }; b.oncontextmenu = function(ev){ ev.preventDefault(); if(confirm('حذف الأصل "' + n + '"؟')){ delete cp[n]; localStorage.setItem('engine.prefabs', JSON.stringify(cp)); renderCustomPrefabs(); } }; g.appendChild(b); }); }
 $('#bSavePrefab').onclick = function(){ var o = selId && getObj(selId); if(!o){ toast('اختر كائناً أولاً'); return; } var n = prompt('اسم الأصل:', o.name); if(!n) return; var cp = customPrefabs(); cp[n] = JSON.parse(JSON.stringify(o)); localStorage.setItem('engine.prefabs', JSON.stringify(cp)); renderCustomPrefabs(); toast('تم حفظ الأصل ⭐ في المكتبة'); };
 $('#bCrate').onclick = function(){ addObject('cube', {name:'صندوق', color:'#c68642', body:'dynamic', tex:'bricks'}); };
-$('#bDup').onclick = function(){ var o = selId && getObj(selId); if(!o) return; pushUndo(); var c = JSON.parse(JSON.stringify(o)); c.id = uid++; c.name = o.name + ' نسخة'; c.pos[0] += 1; c.pos[2] += 1; state.objects.push(c); addMesh(c); select(c.id); };
+$('#bDup').onclick = function(){ var ids = multi.length ? multi.slice() : (selId ? [selId] : []); if(!ids.length) return; pushUndo(); var last = null, newIds = []; ids.forEach(function(i){ var o = getObj(i); if(!o) return; var c = JSON.parse(JSON.stringify(o)); c.id = uid++; c.name = o.name + ' نسخة'; c.pos[0] += 1.5; c.pos[2] += 1.5; state.objects.push(c); addMesh(c); newIds.push(c.id); last = c; }); if(last){ select(newIds[0]); newIds.slice(1).forEach(function(i){ select(i, true); }); } };
+$('#bMulti').onclick = function(){ multiMode = !multiMode; this.classList.toggle('on', multiMode); };
+$('#bAlign').onclick = function(){ var ids = multi.slice(); if(ids.length < 2){ toast('حدد كائنين أو أكثر (Shift أو زر متعدد)'); return; } pushUndo(); var base = getObj(selId); ids.forEach(function(i){ var o = getObj(i); if(o && o !== base){ o.pos[1] = base.pos[1]; syncMesh(o); } }); updateSelVis(); toast('تم محاذاة الارتفاع'); };
+$('#bGround').onclick = function(){ var ids = multi.length ? multi : (selId ? [selId] : []); if(!ids.length) return; pushUndo(); ids.forEach(function(i){ var o = getObj(i); if(o){ o.pos[1] = (BASE[o.type] ? BASE[o.type][1] : 1) * o.scale[1] / 2; syncMesh(o); } }); updateSelVis(); fillInspectorValues(); toast('تم وضع الكائنات على الأرض'); };
 $('#bDel').onclick = delSel;
-function delSel(){ var o = selId && getObj(selId); if(!o) return; pushUndo(); state.objects = state.objects.filter(function(x){ return x.id !== o.id; }); removeMesh(o.id); select(null); }
+function delSel(){ var ids = multi.length ? multi.slice() : (selId ? [selId] : []); if(!ids.length) return; pushUndo(); state.objects = state.objects.filter(function(x){ return ids.indexOf(x.id) < 0; }); ids.forEach(removeMesh); select(null); }
 $('#bUndo').onclick = undo; $('#bRedo').onclick = redo;
 $$('#tools button').forEach(function(b){ b.onclick = function(){ tool = b.dataset.tool; $$('#tools button').forEach(function(x){ x.classList.toggle('on', x === b); }); }; });
 $('#snapSel').onchange = function(){ snap = parseFloat(this.value); };
