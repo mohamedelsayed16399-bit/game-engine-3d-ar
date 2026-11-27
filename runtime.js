@@ -124,7 +124,7 @@ function buildMesh(THREE, o, opts){
 }
 
 var GRADES = { none:'', warm:'sepia(0.25) saturate(1.2) hue-rotate(-8deg)', cold:'saturate(0.9) hue-rotate(15deg) brightness(1.03)', noir:'grayscale(1) contrast(1.25)', vivid:'saturate(1.6) contrast(1.1)', retro:'sepia(0.5) contrast(1.15) saturate(1.3)' };
-var DEFAULT_SETTINGS = { grade:'none', vig:false, cycle:false, skyKind:'solid', music:false, sky:'#87c3ff', fog:true, gravity:24, sun:1.1, ambient:0.55, camera:'follow', camDist:9, camHeight:5, title:'لعبتي' };
+var DEFAULT_SETTINGS = { grade:'none', vig:false, cycle:false, intro:false, skyKind:'solid', music:false, sky:'#87c3ff', fog:true, gravity:24, sun:1.1, ambient:0.55, camera:'follow', camDist:9, camHeight:5, title:'لعبتي' };
 
 function GameCore(THREE, container, data, opts){
   opts = opts || {};
@@ -182,7 +182,12 @@ function GameCore(THREE, container, data, opts){
       else { c.beginPath(); c.arc(x, y, o.type === 'player' ? 4 : 3, 0, 6.3); c.fill(); } });
     c.fillStyle = '#fff'; c.beginPath(); c.arc(70,70,5,0,6.3); c.fill(); c.strokeStyle = '#ffd23f'; c.lineWidth = 2; c.stroke(); c.restore();
   }
-  var kpause = function(e){ if(e.code === 'KeyP' || e.code === 'Escape') setPause(!paused); }; window.addEventListener('keydown', kpause);
+  var skipIntro = false; try{ skipIntro = !!window.__noIntro || sessionStorage.getItem('engine.noIntro') === '1'; sessionStorage.removeItem('engine.noIntro'); }catch(x){} window.__noIntro = false; if((opts.curLevel || 0) > 0) skipIntro = true;
+  if(S.intro && !skipIntro){ var iv = document.createElement('div'); iv.style.cssText = 'position:absolute;inset:0;background:linear-gradient(#0b1030ee,#1b2a6bee);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;pointer-events:auto;text-align:center;padding:20px;z-index:5';
+    var touchy = !!opts.touch; iv.innerHTML = '<div style="font-size:40px;font-weight:900;color:#ffd23f;text-shadow:0 4px 14px #000">' + (S.title || 'لعبتي') + '</div><div style="font-size:16px;opacity:.9;line-height:1.9">' + (touchy ? '🕹 العصا للحركة • قفز للقفز • فعل للتفاعل' : '⌨ WASD أو الأسهم للحركة • المسافة للقفز • E للتفاعل • P للإيقاف') + '<br>اجمع النجوم ووصّل للهدف 🏁</div>';
+    var sb = document.createElement('button'); sb.textContent = 'ابدأ اللعب ▶'; sb.style.cssText = 'font:800 22px Tahoma;padding:12px 34px;border:0;border-radius:16px;background:#ffd23f;color:#222;cursor:pointer;margin-top:10px'; iv.appendChild(sb); ui.appendChild(iv); paused = true;
+    sb.onclick = function(){ iv.remove(); paused = false; }; }
+  var kpause = function(e){ if(iv && iv.parentNode) return; if(e.code === 'KeyP' || e.code === 'Escape') setPause(!paused); }; window.addEventListener('keydown', kpause);
 
   var isTouch = ('ontouchstart' in window) || navigator.maxTouchPoints > 0 || opts.touch;
   var joy = {x:0,y:0}, joyBase, joyKnob, jumpBtn, actBtn, jumpHeld = false, actHeld = false;
@@ -286,7 +291,7 @@ function GameCore(THREE, container, data, opts){
     message: function(t, ms){ msg.textContent = t; msg.style.display = 'block'; clearTimeout(msg._t); msg._t = setTimeout(function(){ msg.style.display = 'none'; }, ms || 1800); },
     win: function(t){ finish('🏆 ' + (t || 'فزت!'), true); beep(880,0.4,'triangle'); },
     lose: function(t){ finish('💀 ' + (t || 'خسرت')); beep(120,0.5,'sawtooth'); },
-    restart: function(){ opts.onRestart ? opts.onRestart(wonFlag) : location.reload(); },
+    restart: function(){ try{ sessionStorage.setItem('engine.noIntro', '1'); }catch(x){} window.__noIntro = true; opts.onRestart ? opts.onRestart(wonFlag) : location.reload(); },
     beep: beep, rand: function(a,b){ return a + Math.random()*(b-a); },
     dist: function(a,b){ return a.pos.distanceTo(b.pos); },
     camera: { get yaw(){ return yaw; }, get pitch(){ return pitch; }, get first(){ return S.camera === 'first'; }, follow: function(ob, o){ camFollow = ob; if(o){ if(o.dist!=null) S.camDist = o.dist; if(o.height!=null) S.camHeight = o.height; } }, shake: function(a){ shake = a || 0.5; } },
