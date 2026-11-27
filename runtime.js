@@ -105,6 +105,7 @@ function buildMesh(THREE, o, opts){
     if(o.type === 'water'){ mat.map = makeWaterTex(THREE); mat.map.repeat.set(Math.max(1,Math.round((o.scale||[1,1,1])[0]/2)), Math.max(1,Math.round((o.scale||[1,1,1])[2]/2))); mat.transparent = true; mat.opacity = 0.72; mat.roughness = 0.15; mat.metalness = 0.2; mat.color = new THREE.Color('#ffffff'); }
     if(o.opacity != null && o.opacity < 1 && o.type !== 'water'){ mat.transparent = true; mat.opacity = o.opacity; }
     var geo; if(o.type === 'model' && o.model){ geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.Float32BufferAttribute(o.model, 3)); geo.computeVertexNormals(); } else geo = makeGeometry(THREE, o.type);
+    if(o.type === 'model') mat.side = THREE.DoubleSide;
     var m = new THREE.Mesh(geo, mat);
     m.castShadow = true; m.receiveShadow = true;
     if(o.type === 'coin') m.rotation.x = Math.PI/2;
