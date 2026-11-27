@@ -476,8 +476,33 @@ function parseOBJ(txt){
   tri.forEach(function(t){ var v = vs[t]; if(!v) return; out.push(+((v[0]-c[0])/sz).toFixed(4), +((v[1]-c[1])/sz).toFixed(4), +((v[2]-c[2])/sz).toFixed(4)); });
   return out.length > 9 && out.length % 9 === 0 ? out : null;
 }
+
+function parseGLB(buf){
+  var dv = new DataView(buf); if(dv.getUint32(0, true) !== 0x46546C67) return null;
+  var off = 12, json = null, bin = null;
+  while(off < buf.byteLength){ var len = dv.getUint32(off, true), typ = dv.getUint32(off + 4, true); if(typ === 0x4E4F534A) json = JSON.parse(new TextDecoder().decode(new Uint8Array(buf, off + 8, len))); else if(typ === 0x004E4942 && !bin) bin = buf.slice(off + 8, off + 8 + len); off += 8 + len + 0; if(len % 4) off += 4 - len % 4; }
+  if(!json || !bin) return null;
+  function acc(i){ var a = json.accessors[i], bv = json.bufferViews[a.bufferView], comps = { SCALAR:1, VEC2:2, VEC3:3, VEC4:4 }[a.type], base = (bv.byteOffset || 0) + (a.byteOffset || 0), stride = bv.byteStride || 0, out = [], j, k, ctype = a.componentType, size = ({5126:4,5125:4,5123:2,5121:1,5122:2,5120:1})[ctype], d = new DataView(bin);
+    for(j = 0; j < a.count; j++){ for(k = 0; k < comps; k++){ var p = base + j * (stride || comps * size) + k * size, v; if(ctype === 5126) v = d.getFloat32(p, true); else if(ctype === 5125) v = d.getUint32(p, true); else if(ctype === 5123) v = d.getUint16(p, true); else if(ctype === 5121) v = d.getUint8(p); else v = 0; out.push(v); } } return out; }
+  var tris = [], color = null, mats = json.materials || [];
+  var nodes = json.nodes || [], meshNodes = [];
+  function walk(ni, m){ var n = nodes[ni], M = m.slice(); if(n.translation){ M[12] += n.translation[0]; M[13] += n.translation[1]; M[14] += n.translation[2]; } if(n.scale){ M[0] *= n.scale[0]; M[5] *= n.scale[1]; M[10] *= n.scale[2]; M[12] *= 1; } if(n.mesh != null) meshNodes.push([n.mesh, M]); (n.children || []).forEach(function(c){ walk(c, M); }); }
+  var ident = [1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1];
+  if(json.scenes && json.scenes.length){ ((json.scenes[json.scene || 0].nodes) || []).forEach(function(n){ walk(n, ident); }); } else (json.meshes || []).forEach(function(m, i){ meshNodes.push([i, ident]); });
+  meshNodes.forEach(function(mn){ json.meshes[mn[0]].primitives.forEach(function(pr){ if(pr.mode != null && pr.mode !== 4) return; var pos = acc(pr.attributes.POSITION), idx = pr.indices != null ? acc(pr.indices) : null, M = mn[1], n = idx ? idx.length : pos.length / 3, t;
+    if(color == null && pr.material != null && mats[pr.material] && mats[pr.material].pbrMetallicRoughness && mats[pr.material].pbrMetallicRoughness.baseColorFactor){ var c = mats[pr.material].pbrMetallicRoughness.baseColorFactor; color = '#' + [0,1,2].map(function(q){ return ('0' + Math.round(Math.pow(c[q], 1/2.2) * 255).toString(16)).slice(-2); }).join(''); }
+    for(t = 0; t < n; t++){ var vi = idx ? idx[t] : t; tris.push(pos[vi*3] * M[0] + M[12], pos[vi*3+1] * M[5] + M[13], pos[vi*3+2] * M[10] + M[14]); } }); });
+  if(tris.length < 9) return null;
+  var mn = [1e9,1e9,1e9], mx = [-1e9,-1e9,-1e9], i, k; for(i = 0; i < tris.length; i += 3) for(k = 0; k < 3; k++){ mn[k] = Math.min(mn[k], tris[i+k]); mx[k] = Math.max(mx[k], tris[i+k]); }
+  var sz = Math.max(mx[0]-mn[0], mx[1]-mn[1], mx[2]-mn[2]) || 1, c2 = [(mn[0]+mx[0])/2, (mn[1]+mx[1])/2, (mn[2]+mx[2])/2], out = [];
+  for(i = 0; i < tris.length; i += 3) out.push(+((tris[i]-c2[0])/sz).toFixed(4), +((tris[i+1]-c2[1])/sz).toFixed(4), +((tris[i+2]-c2[2])/sz).toFixed(4));
+  return { model: out, color: color };
+}
 $('#bObj').onclick = function(){ $('#fObj').click(); };
-$('#fObj').onchange = function(){ var f = this.files[0]; this.value = ''; if(!f) return; var fr = new FileReader(); fr.onload = function(){ var m = parseOBJ(fr.result); if(!m){ toast('ملف OBJ غير صالح'); return; } if(m.length > 450000){ toast('الموديل كبير (أكثر من 50 ألف مثلث). بسّطه أولاً'); return; } pushUndo(); var t = orbit.target, o = newObj('cube', { name: f.name.replace(/\.obj$/i,''), type:'model', pos:[Math.round(t.x), 6, Math.round(t.z)], scale:[3,3,3], color:'#c9d6ff' }); o.type = 'model'; o.model = m; o.body = 'static'; state.objects.push(o); addMesh(o); select(o.id); toast('تم استيراد الموديل (' + (m.length/9) + ' مثلث)'); }; fr.readAsText(f); };
+$('#fObj').onchange = function(){ var f = this.files[0]; this.value = ''; if(!f) return; var isGlb = /\.(glb)$/i.test(f.name), fr = new FileReader();
+  function add(m, col){ if(!m){ toast('ملف الموديل غير صالح'); return; } if(m.length > 450000){ toast('الموديل كبير (أكثر من 50 ألف مثلث). بسّطه أولاً'); return; } pushUndo(); var t = orbit.target, o = newObj('cube', { name: f.name.replace(/\.(obj|glb)$/i,''), type:'model', pos:[Math.round(t.x), 6, Math.round(t.z)], scale:[3,3,3], color: col || '#c9d6ff' }); o.type = 'model'; o.model = m; o.body = 'static'; state.objects.push(o); addMesh(o); select(o.id); toast('تم استيراد الموديل (' + (m.length/9) + ' مثلث)'); }
+  fr.onload = function(){ if(isGlb){ var r = null; try{ r = parseGLB(fr.result); }catch(x){} add(r && r.model, r && r.color); } else add(parseOBJ(fr.result)); };
+  if(isGlb) fr.readAsArrayBuffer(f); else fr.readAsText(f); };
 $$('#addGrid button').forEach(function(b){ b.onclick = function(){ addObject(b.dataset.t); }; });
 (function(){ var g = $('#prefabGrid'); Object.keys(PREFABS).forEach(function(k){ var b = document.createElement('button'); b.className = 'btn'; b.textContent = PREFABS[k][0]; b.onclick = function(){ addPrefab(k); }; g.appendChild(b); }); })();
 function customPrefabs(){ try{ return JSON.parse(localStorage.getItem('engine.prefabs') || '{}'); }catch(x){ return {}; } }
