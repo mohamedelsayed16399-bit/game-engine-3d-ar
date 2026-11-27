@@ -155,6 +155,7 @@ function GameCore(THREE, container, data, opts){
   var overlay = document.createElement('div'); overlay.style.cssText = 'position:absolute;inset:0;background:#000b;display:none;flex-direction:column;align-items:center;justify-content:center;gap:16px;pointer-events:auto;font-size:34px;font-weight:800;text-align:center';
   var ob = document.createElement('button'); ob.textContent = 'إعادة اللعب ↻'; ob.style.cssText = 'font:700 20px Tahoma;padding:10px 26px;border:0;border-radius:14px;background:#ffd23f;color:#222;cursor:pointer';
   var otxt = document.createElement('div'); overlay.appendChild(otxt); overlay.appendChild(ob);
+  var hudInv = document.createElement('div'); hudInv.style.cssText = 'position:absolute;bottom:90px;left:12px;font-size:18px;text-shadow:0 2px 6px #000a;background:#0006;padding:4px 10px;border-radius:10px;display:none;direction:rtl'; ui.appendChild(hudInv);
   ui.appendChild(hudScore); ui.appendChild(hudText); ui.appendChild(msg); ui.appendChild(overlay);
   var paused = false, playT = 0, mmOn = true;
   var mm = document.createElement('canvas'); mm.width = 140; mm.height = 140; mm.style.cssText = 'position:absolute;top:52px;left:10px;width:96px;height:96px;border-radius:50%;background:#0008;border:2px solid #fff6;pointer-events:none';
@@ -283,6 +284,8 @@ function GameCore(THREE, container, data, opts){
       var cfg = { type: b, name: p.name || b, tag: p.tag || '', color: p.color || '#ffffff', pos: p.pos || [0,0,0], rot: p.rot || [0,0,0], scale: p.scale || [1,1,1], body: p.body || 'none', script: p.script || '', emissive: p.emissive, tex: p.tex };
       var ob = mkObj(cfg); if(p.vel) ob.vel.set(p.vel[0],p.vel[1],p.vel[2]); call(ob,'start'); return ob;
     },
+    inv: {}, give: function(n, c, ic){ c = (c == null ? 1 : c); game.inv[n] = (game.inv[n] || 0) + c; if(ic) game.inv['__i' + n] = ic; var t = Object.keys(game.inv).filter(function(k){ return k.indexOf('__i') !== 0 && game.inv[k] > 0; }).map(function(k){ return (game.inv['__i' + k] || '🎒') + ' ' + k + ' × ' + game.inv[k]; }).join('   '); hudInv.textContent = t; hudInv.style.display = t ? 'block' : 'none'; game.beep(660, 0.08, 'triangle'); },
+    count: function(n){ return game.inv[n] || 0; },
     flags: {}, set: function(k,v){ game.flags[k] = (v === undefined ? true : v); }, get: function(k){ return game.flags[k]; },
     setCheckpoint: function(ob, p){ ob.checkpoint = (p || ob.pos).clone(); game.message('✓ نقطة حفظ', 1200); beep(760,0.12,'triangle'); },
     respawn: function(ob){ if(!ob || ended) return; ob.pos.copy(ob.checkpoint || ob.startPos); ob.vel.set(0,0,0); ob.fell = false; game.hurt(1); },
@@ -444,4 +447,4 @@ function GameRuntime(THREE, container, data, opts){
   }
   load(0);
   return { get game(){ return cur.game; }, objects: function(){ return cur.objects(); }, stop: function(){ if(cur) cur.stop(); cur = null; }, isEnded: function(){ return cur.isEnded(); }, getScore: function(){ return cur.getScore(); }, resize: function(){ cur.resize(); }, level: function(){ return idx; } };
-}
+    }
