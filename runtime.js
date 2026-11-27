@@ -162,13 +162,15 @@ function GameCore(THREE, container, data, opts){
   var mm = document.createElement('canvas'); mm.width = 140; mm.height = 140; mm.style.cssText = 'position:absolute;top:52px;left:10px;width:96px;height:96px;border-radius:50%;background:#0008;border:2px solid #fff6;pointer-events:none';
   var pb = document.createElement('button'); pb.textContent = '⏸'; pb.style.cssText = 'position:absolute;top:10px;left:10px;font:700 18px Tahoma;padding:4px 10px;border:0;border-radius:12px;background:#0006;color:#fff;cursor:pointer;pointer-events:auto';
   var mb = document.createElement('button'); mb.textContent = '🗺'; mb.style.cssText = 'position:absolute;top:10px;left:56px;font:700 18px Tahoma;padding:4px 10px;border:0;border-radius:12px;background:#0006;color:#fff;cursor:pointer;pointer-events:auto';
+  var muted = false; var sb = document.createElement('button'); sb.textContent = '🔊'; sb.style.cssText = 'position:absolute;top:10px;left:102px;font:700 18px Tahoma;padding:4px 10px;border:0;border-radius:12px;background:#0006;color:#fff;cursor:pointer;pointer-events:auto';
+  sb.onclick = function(){ muted = !muted; sb.textContent = muted ? '🔇' : '🔊'; };
   var pov = document.createElement('div'); pov.style.cssText = 'position:absolute;inset:0;background:#000a;display:none;flex-direction:column;align-items:center;justify-content:center;gap:14px;pointer-events:auto;font-size:32px;font-weight:800';
   pov.innerHTML = '<div>⏸ إيقاف مؤقت</div>';
   var pr = document.createElement('button'), pq = document.createElement('button');
   [pr, pq].forEach(function(b){ b.style.cssText = 'font:700 18px Tahoma;padding:9px 24px;border:0;border-radius:14px;background:#ffd23f;color:#222;cursor:pointer'; pov.appendChild(b); });
   pr.textContent = 'متابعة ▶'; pq.textContent = 'إعادة المستوى ↻';
   if(opts.levelNames && opts.levelNames.length > 1){ var lw = document.createElement('div'); lw.style.cssText = 'display:flex;flex-wrap:wrap;gap:8px;justify-content:center;max-width:80%;font-size:14px'; opts.levelNames.forEach(function(nm, k){ var lb = document.createElement('button'); lb.textContent = (k === opts.curLevel ? '● ' : '') + nm; lb.style.cssText = 'font:700 14px Tahoma;padding:6px 14px;border:0;border-radius:12px;background:' + (k === opts.curLevel ? '#ffd23f' : '#6c8cff') + ';color:#111;cursor:pointer'; lb.onclick = function(){ setPause(false); opts.goLevel(k); }; lw.appendChild(lb); }); pov.appendChild(lw); }
-  ui.appendChild(mm); ui.appendChild(pb); ui.appendChild(mb); ui.appendChild(pov);
+  ui.appendChild(mm); ui.appendChild(pb); ui.appendChild(mb); ui.appendChild(sb); ui.appendChild(pov);
   function setPause(v){ if(ended) return; paused = v; pov.style.display = v ? 'flex' : 'none'; pb.textContent = v ? '▶' : '⏸'; }
   pb.onclick = function(){ setPause(!paused); }; pr.onclick = function(){ setPause(false); }; pq.onclick = function(){ setPause(false); game.restart(); };
   mb.onclick = function(){ mmOn = !mmOn; mm.style.display = mmOn ? 'block' : 'none'; };
@@ -229,7 +231,7 @@ function GameCore(THREE, container, data, opts){
   })();
   /* صوت */
   var actx = null;
-  function beep(freq, dur, type, vol){ try{ actx = actx || new (window.AudioContext||window.webkitAudioContext)(); var o = actx.createOscillator(), g = actx.createGain(); o.type = type || 'sine'; o.frequency.value = freq || 440; g.gain.value = vol || 0.12; o.connect(g); g.connect(actx.destination); var t = actx.currentTime; g.gain.setValueAtTime(vol||0.12, t); g.gain.exponentialRampToValueAtTime(0.0001, t + (dur||0.15)); o.start(t); o.stop(t + (dur||0.15)); }catch(e){} }
+  function beep(freq, dur, type, vol){ if(muted) return; try{ actx = actx || new (window.AudioContext||window.webkitAudioContext)(); var o = actx.createOscillator(), g = actx.createGain(); o.type = type || 'sine'; o.frequency.value = freq || 440; g.gain.value = vol || 0.12; o.connect(g); g.connect(actx.destination); var t = actx.currentTime; g.gain.setValueAtTime(vol||0.12, t); g.gain.exponentialRampToValueAtTime(0.0001, t + (dur||0.15)); o.start(t); o.stop(t + (dur||0.15)); }catch(e){} }
 
   /* موسيقى خلفية بسيطة مولّدة */
   var musicT = null, mStep = 0, mOn = false;
@@ -449,4 +451,4 @@ function GameRuntime(THREE, container, data, opts){
   }
   load(0);
   return { get game(){ return cur.game; }, objects: function(){ return cur.objects(); }, stop: function(){ if(cur) cur.stop(); cur = null; }, isEnded: function(){ return cur.isEnded(); }, getScore: function(){ return cur.getScore(); }, resize: function(){ cur.resize(); }, level: function(){ return idx; } };
-}
+      }
