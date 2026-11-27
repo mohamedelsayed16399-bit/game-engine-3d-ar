@@ -345,6 +345,7 @@ function GameCore(THREE, container, data, opts){
           var s = solids[i]; if(s === d) continue;
           var sb = box(s); if(!overlap(bb, sb)) continue;
           if(s.body === 'dynamic' && a !== 1 && d.type === 'player'){ s.vel[k] = d.vel[k]*0.9; }
+          if(a !== 1 && d.type === 'player' && wasGrounded && s.body !== 'dynamic'){ var stFeet = d.pos.y - d.size()[1]/2, stTop = s.pos.y + s.size()[1]/2; if(stTop - stFeet > 0.02 && stTop - stFeet <= 1.0){ d.pos.y = stTop + d.size()[1]/2 + 0.001; d.grounded = true; d.supporter = s; bb = box(d); continue; } }
           var half = d.size()[a]/2, sh = s.size()[a]/2;
           var bn = d.bounce, hit = Math.abs(d.vel[k]);
           if(d.vel[k] > 0 || (d.vel[k] === 0 && d.pos[k] < s.pos[k])){ d.pos[k] = s.pos[k] - sh - half - 0.0005; if(d.vel[k] > 0) d.vel[k] = (bn && hit > 1.2) ? -d.vel[k]*bn : 0; }
@@ -447,4 +448,4 @@ function GameRuntime(THREE, container, data, opts){
   }
   load(0);
   return { get game(){ return cur.game; }, objects: function(){ return cur.objects(); }, stop: function(){ if(cur) cur.stop(); cur = null; }, isEnded: function(){ return cur.isEnded(); }, getScore: function(){ return cur.getScore(); }, resize: function(){ cur.resize(); }, level: function(){ return idx; } };
-    }
+}
