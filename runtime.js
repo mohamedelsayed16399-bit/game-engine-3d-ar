@@ -162,8 +162,8 @@ function GameCore(THREE, container, data, opts){
   var mm = document.createElement('canvas'); mm.width = 140; mm.height = 140; mm.style.cssText = 'position:absolute;top:52px;left:10px;width:96px;height:96px;border-radius:50%;background:#0008;border:2px solid #fff6;pointer-events:none';
   var pb = document.createElement('button'); pb.textContent = '⏸'; pb.style.cssText = 'position:absolute;top:10px;left:10px;font:700 18px Tahoma;padding:4px 10px;border:0;border-radius:12px;background:#0006;color:#fff;cursor:pointer;pointer-events:auto';
   var mb = document.createElement('button'); mb.textContent = '🗺'; mb.style.cssText = 'position:absolute;top:10px;left:56px;font:700 18px Tahoma;padding:4px 10px;border:0;border-radius:12px;background:#0006;color:#fff;cursor:pointer;pointer-events:auto';
-  var muted = false; var sb = document.createElement('button'); sb.textContent = '🔊'; sb.style.cssText = 'position:absolute;top:10px;left:102px;font:700 18px Tahoma;padding:4px 10px;border:0;border-radius:12px;background:#0006;color:#fff;cursor:pointer;pointer-events:auto';
-  sb.onclick = function(){ muted = !muted; sb.textContent = muted ? '🔇' : '🔊'; };
+  var muted = false; try{ muted = localStorage.getItem('engine.muted') === '1'; }catch(e){} var sb = document.createElement('button'); sb.textContent = muted ? '🔇' : '🔊'; sb.style.cssText = 'position:absolute;top:10px;left:102px;font:700 18px Tahoma;padding:4px 10px;border:0;border-radius:12px;background:#0006;color:#fff;cursor:pointer;pointer-events:auto';
+  sb.onclick = function(){ muted = !muted; try{ localStorage.setItem('engine.muted', muted ? '1' : '0'); }catch(e){} sb.textContent = muted ? '🔇' : '🔊'; };
   var pov = document.createElement('div'); pov.style.cssText = 'position:absolute;inset:0;background:#000a;display:none;flex-direction:column;align-items:center;justify-content:center;gap:14px;pointer-events:auto;font-size:32px;font-weight:800';
   pov.innerHTML = '<div>⏸ إيقاف مؤقت</div>';
   var pr = document.createElement('button'), pq = document.createElement('button');
@@ -287,6 +287,8 @@ function GameCore(THREE, container, data, opts){
       var cfg = { type: b, name: p.name || b, tag: p.tag || '', color: p.color || '#ffffff', pos: p.pos || [0,0,0], rot: p.rot || [0,0,0], scale: p.scale || [1,1,1], body: p.body || 'none', script: p.script || '', emissive: p.emissive, tex: p.tex };
       var ob = mkObj(cfg); if(p.vel) ob.vel.set(p.vel[0],p.vel[1],p.vel[2]); call(ob,'start'); return ob;
     },
+    save: function(k, v){ try{ localStorage.setItem('engine.save.' + (S.title || '') + '.' + k, JSON.stringify(v)); }catch(e){} },
+    load: function(k, d){ try{ var r = localStorage.getItem('engine.save.' + (S.title || '') + '.' + k); return r === null ? d : JSON.parse(r); }catch(e){ return d; } },
     inv: {}, give: function(n, c, ic){ c = (c == null ? 1 : c); game.inv[n] = (game.inv[n] || 0) + c; if(ic) game.inv['__i' + n] = ic; var t = Object.keys(game.inv).filter(function(k){ return k.indexOf('__i') !== 0 && game.inv[k] > 0; }).map(function(k){ return (game.inv['__i' + k] || '🎒') + ' ' + k + ' × ' + game.inv[k]; }).join('   '); hudInv.textContent = t; hudInv.style.display = t ? 'block' : 'none'; game.beep(660, 0.08, 'triangle'); },
     count: function(n){ return game.inv[n] || 0; },
     flags: {}, set: function(k,v){ game.flags[k] = (v === undefined ? true : v); }, get: function(k){ return game.flags[k]; },
@@ -451,4 +453,4 @@ function GameRuntime(THREE, container, data, opts){
   }
   load(0);
   return { get game(){ return cur.game; }, objects: function(){ return cur.objects(); }, stop: function(){ if(cur) cur.stop(); cur = null; }, isEnded: function(){ return cur.isEnded(); }, getScore: function(){ return cur.getScore(); }, resize: function(){ cur.resize(); }, level: function(){ return idx; } };
-      }
+}
