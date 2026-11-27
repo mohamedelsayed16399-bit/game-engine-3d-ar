@@ -164,6 +164,7 @@ function GameCore(THREE, container, data, opts){
   var pr = document.createElement('button'), pq = document.createElement('button');
   [pr, pq].forEach(function(b){ b.style.cssText = 'font:700 18px Tahoma;padding:9px 24px;border:0;border-radius:14px;background:#ffd23f;color:#222;cursor:pointer'; pov.appendChild(b); });
   pr.textContent = 'متابعة ▶'; pq.textContent = 'إعادة المستوى ↻';
+  if(opts.levelNames && opts.levelNames.length > 1){ var lw = document.createElement('div'); lw.style.cssText = 'display:flex;flex-wrap:wrap;gap:8px;justify-content:center;max-width:80%;font-size:14px'; opts.levelNames.forEach(function(nm, k){ var lb = document.createElement('button'); lb.textContent = (k === opts.curLevel ? '● ' : '') + nm; lb.style.cssText = 'font:700 14px Tahoma;padding:6px 14px;border:0;border-radius:12px;background:' + (k === opts.curLevel ? '#ffd23f' : '#6c8cff') + ';color:#111;cursor:pointer'; lb.onclick = function(){ setPause(false); opts.goLevel(k); }; lw.appendChild(lb); }); pov.appendChild(lw); }
   ui.appendChild(mm); ui.appendChild(pb); ui.appendChild(mb); ui.appendChild(pov);
   function setPause(v){ if(ended) return; paused = v; pov.style.display = v ? 'flex' : 'none'; pb.textContent = v ? '▶' : '⏸'; }
   pb.onclick = function(){ setPause(!paused); }; pr.onclick = function(){ setPause(false); }; pq.onclick = function(){ setPause(false); game.restart(); };
@@ -429,7 +430,7 @@ function GameRuntime(THREE, container, data, opts){
   function load(i){
     if(cur){ cur.stop(); cur = null; }
     idx = i; if(levelStart[i] == null) levelStart[i] = 0;
-    var o2 = Object.assign({}, opts, { startScore: levelStart[i], hasNext: i < data.levels.length - 1,
+    var o2 = Object.assign({}, opts, { levelNames: data.levels.map(function(l,k){ return l.name || ('مستوى ' + (k+1)); }), curLevel: i, goLevel: function(k){ levelStart[k] = 0; load(k); }, startScore: levelStart[i], hasNext: i < data.levels.length - 1,
       goNext: function(){ var s = cur.getScore(); levelStart[idx+1] = s; load(idx+1); },
       onRestart: function(won){ if(won && idx === data.levels.length - 1){ levelStart = [0]; load(0); } else load(idx); } });
     cur = GameCore(THREE, container, { settings: data.settings, objects: data.levels[i].objects }, o2);
@@ -437,4 +438,4 @@ function GameRuntime(THREE, container, data, opts){
   }
   load(0);
   return { get game(){ return cur.game; }, objects: function(){ return cur.objects(); }, stop: function(){ if(cur) cur.stop(); cur = null; }, isEnded: function(){ return cur.isEnded(); }, getScore: function(){ return cur.getScore(); }, resize: function(){ cur.resize(); }, level: function(){ return idx; } };
-                         }
+}
