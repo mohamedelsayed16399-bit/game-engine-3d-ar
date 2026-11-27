@@ -258,7 +258,7 @@ function tmplLabyrinth(){
 var TEMPLATES = { gauntlet:['🌀 ممر العقبات (بندول وعارضة وأبراج)',tmplGauntlet], parkour:['🧗 برج باركور (منصات متحركة وساقطة)',tmplParkour], puzzle:['🔑 غرفة لغز (مفتاح وباب ومؤقت)',tmplPuzzle], fps:['🎯 منظور أول: إطلاق نار',tmplFPS], physics:['⚽ ملعب فيزياء (كرات ترتد)',tmplPhysics], showcase:['✨ عرض المزايا (ماء ونار وثلج)',tmplShowcase], shooter:['🔫 مطاردة وإطلاق نار',tmplShooter], random:['🎲 مرحلة عشوائية جديدة',tmplRandom], platformer:['🏞 منصات',tmplPlatformer], arena:['🏟 ساحة عملات',tmplArena], maze:['🧱 متاهة',tmplLabyrinth], empty:['⬜ مشروع فارغ',tmplEmpty] };
 
 /* ===== الحالة ===== */
-var multi = [], state = null, selId = null, undoStack = [], redoStack = [], tool = 'move', snap = 0, mode = 'edit', run = null, dirty = false;
+var clip = [], multi = [], state = null, selId = null, undoStack = [], redoStack = [], tool = 'move', snap = 0, mode = 'edit', run = null, dirty = false;
 var meshes = {}, multiMode = false;
 function relink(){ if(state.levels){ if(state.active == null || !state.levels[state.active]) state.active = 0; state.objects = state.levels[state.active].objects; } }
 function syncLevels(){ if(state.levels) state.levels[state.active].objects = state.objects; }
@@ -530,6 +530,11 @@ document.addEventListener('keydown', function(e){
   if(e.key === 'Delete' || e.key === 'Backspace') delSel();
   else if((e.ctrlKey||e.metaKey) && e.key.toLowerCase() === 'z'){ e.preventDefault(); e.shiftKey ? redo() : undo(); }
   else if((e.ctrlKey||e.metaKey) && e.key.toLowerCase() === 'd'){ e.preventDefault(); $('#bDup').click(); }
+  else if((e.ctrlKey||e.metaKey) && e.key.toLowerCase() === 'c'){ var ids = multi.length ? multi : (selId ? [selId] : []); clip = ids.map(function(i){ return JSON.parse(JSON.stringify(getObj(i))); }).filter(Boolean); if(clip.length) toast('نُسخ ' + clip.length + ' كائن (Ctrl+V للصق، حتى في مستوى آخر)'); }
+  else if((e.ctrlKey||e.metaKey) && e.key.toLowerCase() === 'v'){ if(!clip.length) return; e.preventDefault(); pushUndo(); var nid = []; clip.forEach(function(o){ var c = JSON.parse(JSON.stringify(o)); c.id = uid++; c.pos[0] += 1; c.pos[2] += 1; state.objects.push(c); addMesh(c); nid.push(c.id); }); select(nid[0]); nid.slice(1).forEach(function(i){ select(i, true); }); }
+  else if((e.ctrlKey||e.metaKey) && e.key.toLowerCase() === 'a'){ e.preventDefault(); var all = state.objects.filter(function(o){ return o.type !== 'plane'; }).map(function(o){ return o.id; }); if(all.length){ select(all[0]); all.slice(1).forEach(function(i){ select(i, true); }); toast('حُدد الكل (' + all.length + ')'); } }
+  else if(e.key === 'Escape'){ select(null); }
+  else if(/^Arrow|^Page/.test(e.key) && (selId || multi.length)){ e.preventDefault(); var st = e.shiftKey ? 1 : 0.5, dd = [0,0,0]; if(e.key === 'ArrowLeft') dd[0] = -st; else if(e.key === 'ArrowRight') dd[0] = st; else if(e.key === 'ArrowUp') dd[2] = -st; else if(e.key === 'ArrowDown') dd[2] = st; else if(e.key === 'PageUp') dd[1] = st; else dd[1] = -st; pushUndo(); (multi.length ? multi : [selId]).forEach(function(i){ var o = getObj(i); if(o){ for(var k = 0; k < 3; k++) o.pos[k] = +(o.pos[k] + dd[k]).toFixed(3); syncMesh(o); } }); updateSelVis(); }
   else if(e.key === 'w') $('[data-tool=move]').click(); else if(e.key === 'e') $('[data-tool=rotate]').click(); else if(e.key === 'r') $('[data-tool=scale]').click(); else if(e.key === 'f') $('#bFocus').click();
 });
 
