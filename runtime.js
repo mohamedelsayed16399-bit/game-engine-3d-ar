@@ -155,6 +155,7 @@ function GameCore(THREE, container, data, opts){
   var overlay = document.createElement('div'); overlay.style.cssText = 'position:absolute;inset:0;background:#000b;display:none;flex-direction:column;align-items:center;justify-content:center;gap:16px;pointer-events:auto;font-size:34px;font-weight:800;text-align:center';
   var ob = document.createElement('button'); ob.textContent = 'إعادة اللعب ↻'; ob.style.cssText = 'font:700 20px Tahoma;padding:10px 26px;border:0;border-radius:14px;background:#ffd23f;color:#222;cursor:pointer';
   var otxt = document.createElement('div'); overlay.appendChild(otxt); overlay.appendChild(ob);
+  if(window.innerWidth < 600){ hudText.style.top = '52px'; hudText.style.left = '112px'; hudText.style.right = '10px'; hudText.style.transform = 'none'; hudText.style.fontSize = '14px'; hudText.style.textAlign = 'center'; }
   var hudInv = document.createElement('div'); hudInv.style.cssText = 'position:absolute;bottom:90px;left:12px;font-size:18px;text-shadow:0 2px 6px #000a;background:#0006;padding:4px 10px;border-radius:10px;display:none;direction:rtl'; ui.appendChild(hudInv);
   ui.appendChild(hudScore); ui.appendChild(hudText); ui.appendChild(msg); ui.appendChild(overlay);
   var paused = false, playT = 0, mmOn = true;
