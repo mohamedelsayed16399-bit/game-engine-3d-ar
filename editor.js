@@ -251,6 +251,16 @@ function tmplTreasure(){
   o.push(newObj('light',{pos:[0,14,0],intensity:110}));
   return { settings:{ title:'كنز الجزيرة', skyKind:'sunset', music:true, camDist:11, camHeight:9, vig:true, intro:true }, objects:o };
 }
+function tmplRace(){
+  var o = [], i;
+  o.push(newObj('plane',{name:'الحلبة',pos:[0,-0.05,0],scale:[50,1,50],color:'#3a3a40',tex:'checker'}));
+  o.push(newObj('player',{pos:[0,1.2,0],script:SCRIPTS.player2}));
+  for(i=0;i<6;i++){ var a = i / 6 * 6.2832, r = 14; o.push(newObj('cylinder',{name:'بوابة',pos:[Math.cos(a)*r,2,Math.sin(a)*r],scale:[3,0.4,3],rot:[90,0,0],color:'#ffd166',emissive:true,body:'trigger',script:"var done = false;\nfunction update(dt){ self.rot.y += dt * 1.5; }\nfunction onTouch(o){ if(o.type !== 'player' || done) return; var mgr = game.find('مدير السباق'); if(!mgr || mgr.data.next !== IDX) return; done = true; mgr.data.next++; game.beep(700, 0.1, 'triangle'); game.burst(self.pos, '#ffd166', 14); game.destroy(self); }".replace('IDX', String(i))})); }
+  for(i=0;i<5;i++){ var b = i / 5 * 6.2832 + 0.3; o.push(newObj('cube',{name:'حاجز',pos:[Math.cos(b)*8,1,Math.sin(b)*8],scale:[1.5,2,4],color:'#e63946',tex:'bricks'})); }
+  o.push(newObj('cube',{name:'مدير السباق',pos:[0,-5,0],scale:[0.1,0.1,0.1],body:'none',opacity:0,color:'#000000',script:"var t = 0;\nself.data.next = 0;\nfunction update(dt){ t += dt; var n = self.data.next; game.hud('🏁 بوابة ' + Math.min(n + 1, 6) + ' من 6 • ⏱ ' + t.toFixed(1) + ' ث'); if(n >= 6){ game.win('أنهيت السباق في ' + t.toFixed(1) + ' ثانية!'); self.data.next = 99; } }"}));
+  o.push(newObj('light',{pos:[0,16,0],intensity:110}));
+  return { settings:{ title:'سباق البوابات', skyKind:'sunset', music:true, camDist:11, camHeight:9, vig:true, intro:true }, objects:o };
+}
 function tmplEmpty(){ return { settings:{}, objects:[ newObj('plane',{name:'الأرض',pos:[0,-0.05,0],scale:[40,1,40]}), newObj('player',{pos:[0,1.2,0]}) ] }; }
 function tmplPlatformer(){
   var o = [];
@@ -289,7 +299,7 @@ function tmplLabyrinth(){
   o.push(newObj('light',{pos:[0,6,0],intensity:120}));
   return { settings:{ title:'المتاهة', sky:'#14213d', camera:'top', camDist:9, camHeight:6 }, objects:o };
 }
-var TEMPLATES = { treasure:['💎 كنز الجزيرة (اجمع 3 جواهر وافتح الصندوق)',tmplTreasure], timerace:['⏱ سباق مع الزمن (اجمع العملات في 45 ثانية)',tmplTimeRace], waves:['🌊 صمود الموجات (5 موجات أعداء)',tmplWaves], gauntlet:['🌀 ممر العقبات (بندول وعارضة وأبراج)',tmplGauntlet], parkour:['🧗 برج باركور (منصات متحركة وساقطة)',tmplParkour], puzzle:['🔑 غرفة لغز (مفتاح وباب ومؤقت)',tmplPuzzle], fps:['🎯 منظور أول: إطلاق نار',tmplFPS], physics:['⚽ ملعب فيزياء (كرات ترتد)',tmplPhysics], showcase:['✨ عرض المزايا (ماء ونار وثلج)',tmplShowcase], shooter:['🔫 مطاردة وإطلاق نار',tmplShooter], random:['🎲 مرحلة عشوائية جديدة',tmplRandom], platformer:['🏞 منصات',tmplPlatformer], arena:['🏟 ساحة عملات',tmplArena], maze:['🧱 متاهة',tmplLabyrinth], empty:['⬜ مشروع فارغ',tmplEmpty] };
+var TEMPLATES = { race:['🏁 سباق البوابات (6 بوابات بالترتيب)',tmplRace], treasure:['💎 كنز الجزيرة (اجمع 3 جواهر وافتح الصندوق)',tmplTreasure], timerace:['⏱ سباق مع الزمن (اجمع العملات في 45 ثانية)',tmplTimeRace], waves:['🌊 صمود الموجات (5 موجات أعداء)',tmplWaves], gauntlet:['🌀 ممر العقبات (بندول وعارضة وأبراج)',tmplGauntlet], parkour:['🧗 برج باركور (منصات متحركة وساقطة)',tmplParkour], puzzle:['🔑 غرفة لغز (مفتاح وباب ومؤقت)',tmplPuzzle], fps:['🎯 منظور أول: إطلاق نار',tmplFPS], physics:['⚽ ملعب فيزياء (كرات ترتد)',tmplPhysics], showcase:['✨ عرض المزايا (ماء ونار وثلج)',tmplShowcase], shooter:['🔫 مطاردة وإطلاق نار',tmplShooter], random:['🎲 مرحلة عشوائية جديدة',tmplRandom], platformer:['🏞 منصات',tmplPlatformer], arena:['🏟 ساحة عملات',tmplArena], maze:['🧱 متاهة',tmplLabyrinth], empty:['⬜ مشروع فارغ',tmplEmpty] };
 
 /* ===== الحالة ===== */
 var clip = [], multi = [], state = null, selId = null, undoStack = [], redoStack = [], tool = 'move', snap = 0, mode = 'edit', run = null, dirty = false;
